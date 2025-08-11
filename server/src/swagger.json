@@ -1,0 +1,470 @@
+{
+  "openapi": "3.0.3",
+  "info": { "title": "Marketplace API", "version": "1.3.0" },
+  "servers": [{ "url": "http://localhost:4000" }],
+  "tags": [
+    { "name": "Auth" },
+    { "name": "Users" },
+    { "name": "Listings" },
+    { "name": "Categories" },
+    { "name": "Health" }
+  ],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": { "type": "http", "scheme": "bearer", "bearerFormat": "JWT" }
+    },
+    "schemas": {
+      "RegisterRequest": {
+        "type": "object",
+        "required": ["email","username","password"],
+        "properties": {
+          "email": { "type": "string", "format": "email" },
+          "username": { "type": "string", "minLength": 3, "maxLength": 30 },
+          "name": { "type": "string" },
+          "password": { "type": "string", "minLength": 6 }
+        },
+        "example": { "email": "user@example.com", "username": "user1", "password": "secret123" }
+      },
+      "LoginRequest": {
+        "type": "object",
+        "required": ["email","password"],
+        "properties": {
+          "email": { "type": "string", "format": "email" },
+          "password": { "type": "string", "minLength": 6 }
+        },
+        "example": { "email": "user@example.com", "password": "secret123" }
+      },
+      "AuthLoginResponse": {
+        "type": "object",
+        "properties": {
+          "user": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string", "description": "publicId (UUID v4) ή _id σε legacy" },
+              "email": { "type": "string" },
+              "username": { "type": "string" },
+              "roles": { "type": "array", "items": { "type": "string", "enum": ["USER","ADMIN","SELLER"] } },
+              "serial": { "type": "integer", "description": "sequential user code" }
+            }
+          },
+          "accessToken": { "type": "string" }
+        }
+      },
+      "ChangePasswordRequest": {
+        "type": "object",
+        "required": ["currentPassword","newPassword"],
+        "properties": {
+          "currentPassword": { "type": "string", "minLength": 6 },
+          "newPassword": { "type": "string", "minLength": 6 }
+        },
+        "example": { "currentPassword": "secret123", "newPassword": "newSecret456" }
+      },
+      "UserPublic": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "description": "publicId (UUID v4) ή _id σε legacy" },
+          "email": { "type": "string" },
+          "username": { "type": "string" },
+          "roles": { "type": "array", "items": { "type": "string", "enum": ["USER","ADMIN","SELLER"] } },
+          "serial": { "type": "integer", "description": "sequential user code" },
+          "createdAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "UpdateUserRolesRequest": {
+        "type": "object",
+        "required": ["roles"],
+        "properties": {
+          "roles": {
+            "type": "array",
+            "minItems": 1,
+            "items": { "type": "string", "enum": ["USER","ADMIN","SELLER"] }
+          }
+        },
+        "example": { "roles": ["USER","ADMIN"] }
+      },
+      "Listing": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "description": "publicId (UUID v4)" },
+          "serial": { "type": "integer", "description": "sequential listing code" },
+          "sellerId": { "type": "string", "description": "Mongo ObjectId του seller" },
+          "title": { "type": "string" },
+          "description": { "type": "string" },
+          "condition": { "type": "string", "enum": ["NEW_WITH_TAGS","NEW","EXCELLENT","GOOD","FAIR"] },
+          "price": { "type": "number", "description": "euros" },
+          "currency": { "type": "string", "default": "EUR" },
+          "photos": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "url": { "type": "string" },
+                "isCover": { "type": "boolean" }
+              }
+            }
+          },
+          "tags": { "type": "array", "items": { "type": "string" } },
+          "status": { "type": "string", "enum": ["ACTIVE","RESERVED","SOLD","HIDDEN"] },
+          "categoryId": { "type": "string", "description": "Mongo ObjectId της κατηγορίας" },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "updatedAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "ListingCreate": {
+        "type": "object",
+        "required": ["title","price"],
+        "properties": {
+          "title": { "type": "string" },
+          "description": { "type": "string" },
+          "condition": { "type": "string", "enum": ["NEW_WITH_TAGS","NEW","EXCELLENT","GOOD","FAIR"] },
+          "price": { "type": "number" },
+          "currency": { "type": "string", "default": "EUR" },
+          "categoryId": { "type": "string", "description": "Mongo ObjectId" },
+          "photos": {
+            "type": "array",
+            "items": { "type": "object", "properties": { "url": { "type": "string", "format": "uri" }, "isCover": { "type": "boolean" } } }
+          },
+          "tags": { "type": "array", "items": { "type": "string" } }
+        },
+        "example": {
+          "title": "Nike Air Max 90",
+          "description": "Κατάσταση EXCELLENT",
+          "condition": "EXCELLENT",
+          "price": 65,
+          "currency": "EUR",
+          "categoryId": "66b6f7e5d2a3f4c1b2a1c9d8",
+          "tags": ["shoes","nike"],
+          "photos": [{ "url": "https://picsum.photos/seed/airmax/600/600", "isCover": true }]
+        }
+      },
+      "UpdateListing": {
+        "type": "object",
+        "properties": {
+          "title": { "type": "string" },
+          "description": { "type": "string" },
+          "condition": { "type": "string", "enum": ["NEW_WITH_TAGS","NEW","EXCELLENT","GOOD","FAIR"] },
+          "price": { "type": "number" },
+          "currency": { "type": "string" },
+          "categoryId": { "type": "string" },
+          "photos": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "url": { "type": "string", "format": "uri" },
+                "isCover": { "type": "boolean" }
+              }
+            }
+          },
+          "tags": { "type": "array", "items": { "type": "string" } },
+          "status": { "type": "string", "enum": ["ACTIVE","RESERVED","SOLD","HIDDEN"] }
+        }
+      },
+      "Category": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "description": "Mongo _id ως string" },
+          "name": { "type": "string" },
+          "slug": { "type": "string" },
+          "parentId": { "type": "string", "nullable": true, "description": "Mongo _id" },
+          "path": { "type": "array", "items": { "type": "string" } }
+        }
+      },
+      "CategoryCreate": {
+        "type": "object",
+        "required": ["name"],
+        "properties": {
+          "name": { "type": "string" },
+          "slug": { "type": "string" },
+          "parentId": { "type": "string" }
+        },
+        "example": { "name": "Women", "slug": "women" }
+      },
+      "CategoryUpdate": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "slug": { "type": "string" },
+          "parentId": { "type": "string", "nullable": true }
+        }
+      }
+    }
+  },
+  "paths": {
+    "/health": {
+      "get": {
+        "tags": ["Health"],
+        "summary": "Health",
+        "responses": { "200": { "description": "OK" } }
+      }
+    },
+
+    "/api/auth/register": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Register",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/RegisterRequest" } } }
+        },
+        "responses": {
+          "201": { "description": "Created", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AuthLoginResponse/properties/user" } } } },
+          "409": { "description": "Conflict (email/username exists)" },
+          "422": { "description": "Validation error" }
+        }
+      }
+    },
+    "/api/auth/login": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Login",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/LoginRequest" } } }
+        },
+        "responses": {
+          "200": { "description": "OK", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AuthLoginResponse" } } } },
+          "401": { "description": "Unauthorized" },
+          "422": { "description": "Validation error" }
+        }
+      }
+    },
+    "/api/auth/password": {
+      "patch": {
+        "tags": ["Auth"],
+        "summary": "Change password (logged-in)",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ChangePasswordRequest" } } }
+        },
+        "responses": {
+          "200": { "description": "Password changed" },
+          "401": { "description": "Unauthorized / wrong current password" },
+          "422": { "description": "Validation error" }
+        }
+      }
+    },
+    "/api/me": {
+      "get": {
+        "tags": ["Auth"],
+        "summary": "Current user (from token)",
+        "security": [{ "bearerAuth": [] }],
+        "responses": { "200": { "description": "OK" }, "401": { "description": "Unauthorized" } }
+      }
+    },
+
+    "/api/users": {
+      "get": {
+        "tags": ["Users"],
+        "summary": "List users (ADMIN)",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": { "description": "OK", "content": { "application/json": { "schema": { "type": "object", "properties": { "items": { "type": "array", "items": { "$ref": "#/components/schemas/UserPublic" } } } } } } },
+          "401": { "description": "Unauthorized" },
+          "403": { "description": "Forbidden" }
+        }
+      }
+    },
+    "/api/users/{id}": {
+      "get": {
+        "summary": "Get user by ID/UUID/serial",
+        "tags": ["Users"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" }, "description": "Serial (π.χ. 7) ή Mongo _id ή UUID (publicId)" }
+        ],
+        "responses": {
+          "200": { "description": "User object", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UserPublic" } } } },
+          "401": { "description": "Unauthorized" },
+          "403": { "description": "Forbidden" },
+          "404": { "description": "Not found" }
+        }
+      },
+      "delete": {
+        "summary": "Delete user by ID/UUID/serial",
+        "tags": ["Users"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" }, "description": "Serial ή Mongo _id ή UUID" }
+        ],
+        "responses": {
+          "200": { "description": "Deleted successfully" },
+          "401": { "description": "Unauthorized" },
+          "403": { "description": "Forbidden" },
+          "404": { "description": "Not found" }
+        }
+      }
+    },
+    "/api/users/{id}/roles": {
+      "put": {
+        "summary": "Update user roles (ADMIN)",
+        "tags": ["Users"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" }, "description": "Serial ή Mongo _id ή UUID" }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UpdateUserRolesRequest" } } }
+        },
+        "responses": {
+          "200": { "description": "Updated user roles", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UserPublic" } } } },
+          "401": { "description": "Unauthorized" },
+          "403": { "description": "Forbidden" },
+          "404": { "description": "Not found" },
+          "422": { "description": "Validation error" }
+        }
+      }
+    },
+
+    "/api/listings": {
+      "get": {
+        "tags": ["Listings"],
+        "summary": "List listings",
+        "parameters": [
+          { "name": "q", "in": "query", "schema": { "type": "string" } },
+          { "name": "category", "in": "query", "schema": { "type": "string" }, "description": "slug ή ObjectId" },
+          { "name": "condition", "in": "query", "schema": { "type": "string", "enum": ["NEW_WITH_TAGS","NEW","EXCELLENT","GOOD","FAIR"] } },
+          { "name": "priceMin", "in": "query", "schema": { "type": "number" } },
+          { "name": "priceMax", "in": "query", "schema": { "type": "number" } },
+          { "name": "sort", "in": "query", "schema": { "type": "string", "enum": ["newest","price_asc","price_desc"] } },
+          { "name": "page", "in": "query", "schema": { "type": "integer", "minimum": 1 } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "minimum": 1, "maximum": 50 } }
+        ],
+        "responses": { "200": { "description": "OK" } }
+      },
+      "post": {
+        "tags": ["Listings"],
+        "summary": "Create listing",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ListingCreate" } } }
+        },
+        "responses": {
+          "201": { "description": "Created", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Listing" } } } },
+          "401": { "description": "Unauthorized" },
+          "403": { "description": "Forbidden" },
+          "422": { "description": "Validation error" }
+        }
+      }
+    },
+    "/api/listings/{id}": {
+      "get": {
+        "tags": ["Listings"],
+        "summary": "Get listing by ID/Serial/UUID",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" }, "description": "Serial (π.χ. 4) ή Mongo _id ή UUID" }
+        ],
+        "responses": {
+          "200": { "description": "OK", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Listing" } } } },
+          "404": { "description": "Not found" }
+        }
+      },
+      "put": {
+        "tags": ["Listings"],
+        "summary": "Update listing by ID/Serial/UUID",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" }, "description": "Serial ή Mongo _id ή UUID" }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UpdateListing" } } }
+        },
+        "responses": {
+          "200": { "description": "Listing updated", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Listing" } } } },
+          "401": { "description": "Unauthorized" },
+          "403": { "description": "Forbidden" },
+          "404": { "description": "Not found" },
+          "422": { "description": "Validation error" }
+        }
+      },
+      "delete": {
+        "tags": ["Listings"],
+        "summary": "Delete listing by ID/Serial/UUID",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" }, "description": "Serial ή Mongo _id ή UUID" }
+        ],
+        "responses": {
+          "200": { "description": "Listing deleted" },
+          "401": { "description": "Unauthorized" },
+          "403": { "description": "Forbidden" },
+          "404": { "description": "Not found" }
+        }
+      }
+    },
+
+    "/api/categories": {
+      "get": {
+        "tags": ["Categories"],
+        "summary": "List categories",
+        "parameters": [
+          { "name": "parent", "in": "query", "schema": { "type": "string", "enum": ["root"] }, "description": "root για top-level" },
+          { "name": "q", "in": "query", "schema": { "type": "string" }, "description": "αναζήτηση στο name" }
+        ],
+        "responses": {
+          "200": { "description": "OK", "content": { "application/json": { "schema": { "type": "object", "properties": { "items": { "type": "array", "items": { "$ref": "#/components/schemas/Category" } } } } } } }
+        }
+      },
+      "post": {
+        "tags": ["Categories"],
+        "summary": "Create category (ADMIN)",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CategoryCreate" } } }
+        },
+        "responses": {
+          "201": { "description": "Created", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Category" } } } },
+          "401": { "description": "Unauthorized" },
+          "403": { "description": "Forbidden" }
+        }
+      }
+    },
+    "/api/categories/{slugOrId}": {
+      "get": {
+        "tags": ["Categories"],
+        "summary": "Get category by slug or id",
+        "parameters": [{ "name": "slugOrId", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": {
+          "200": { "description": "OK", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Category" } } } },
+          "404": { "description": "Not found" }
+        }
+      }
+    },
+    "/api/categories/{id}": {
+      "patch": {
+        "tags": ["Categories"],
+        "summary": "Update category (ADMIN)",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" }, "description": "Mongo _id" }],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CategoryUpdate" } } }
+        },
+        "responses": {
+          "200": { "description": "OK", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Category" } } } },
+          "401": { "description": "Unauthorized" },
+          "403": { "description": "Forbidden" },
+          "404": { "description": "Not found" }
+        }
+      },
+      "delete": {
+        "tags": ["Categories"],
+        "summary": "Delete category (ADMIN)",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" }, "description": "Mongo _id" }],
+        "responses": {
+          "200": { "description": "OK" },
+          "400": { "description": "Category has children" },
+          "401": { "description": "Unauthorized" },
+          "403": { "description": "Forbidden" },
+          "404": { "description": "Not found" }
+        }
+      }
+    }
+  }
+}
