@@ -2,12 +2,10 @@
   "openapi": "3.0.3",
   "info": {
     "title": "Marketplace API",
-    "version": "1.4.0",
-    "description": "Auth, Users, Listings, Orders, Categories. Τα {id} δέχονται serial | UUID | Mongo _id."
+    "version": "1.5.0",
+    "description": "Auth, Users, Listings (με categories[]), Orders, Categories. Τα {id} και τα category references δέχονται serial | UUID | Mongo _id | (slug για categories)."
   },
-  "servers": [
-    { "url": "http://localhost:4000/api" }
-  ],
+  "servers": [{ "url": "http://localhost:4000/api" }],
   "tags": [
     { "name": "Auth" },
     { "name": "Users" },
@@ -69,7 +67,7 @@
           "accessToken": { "type": "string" }
         },
         "example": {
-          "user": { "id": "2f1c1a84-65d6-4c2b-9c44-1c2f559b0a13", "email": "buyer@example.com", "username": "buyer1", "roles": ["USER"] },
+          "user": { "id": "2f1c1a84-65d6-4c2b-9c44-1c2f559b0a13", "email": "panos@gmail.com", "username": "panos", "roles": ["USER","SELLER"] },
           "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6..."
         }
       },
@@ -109,7 +107,10 @@
           "currency": { "type": "string", "example": "EUR" },
           "tags": { "type": "array", "items": { "type": "string" } },
           "status": { "type": "string", "enum": ["ACTIVE","RESERVED","SOLD","HIDDEN"] },
-          "categoryId": { "type": "string" },
+          "categories": {
+            "type": "array",
+            "items": { "type": "object", "properties": { "id": { "type": "string" }, "name": { "type": "string" }, "slug": { "type": "string" } } }
+          },
           "createdAt": { "type": "string", "format": "date-time" },
           "updatedAt": { "type": "string", "format": "date-time" }
         }
@@ -123,16 +124,23 @@
           "condition": { "type": "string", "enum": ["NEW_WITH_TAGS","NEW","EXCELLENT","GOOD","FAIR"] },
           "price": { "type": "number" },
           "currency": { "type": "string", "example": "EUR" },
-          "categoryId": { "type": "string", "description": "serial | uuid | _id" },
-          "tags": { "type": "array", "items": { "type": "string" } }
+          "tags": { "type": "array", "items": { "type": "string" } },
+          "categories": {
+            "description": "serial | uuid | _id | slug — μπορεί να είναι string ή array",
+            "oneOf": [
+              { "type": "string" },
+              { "type": "array", "items": { "type": "string" }, "minItems": 1 }
+            ]
+          }
         },
         "example": {
-          "title": "Μπλε τζην, φορεμένο λίγο",
-          "description": "Καλή κατάσταση",
+          "title": "Adidas Hoodie",
+          "description": "Ζεστό, λίγο φορεμένο",
           "condition": "GOOD",
-          "price": 2500,
+          "price": 1090,
           "currency": "EUR",
-          "tags": ["jeans","blue"]
+          "tags": ["hoodie","adidas"],
+          "categories": ["hoodie", "1"]
         }
       },
       "ListingUpdate": {
@@ -145,9 +153,15 @@
           "currency": { "type": "string" },
           "tags": { "type": "array", "items": { "type": "string" } },
           "status": { "type": "string", "enum": ["ACTIVE","RESERVED","SOLD","HIDDEN"] },
-          "categoryId": { "type": "string" }
+          "categories": {
+            "description": "serial | uuid | _id | slug — string ή array",
+            "oneOf": [
+              { "type": "string" },
+              { "type": "array", "items": { "type": "string" }, "minItems": 1 }
+            ]
+          }
         },
-        "example": { "price": 2300, "status": "ACTIVE" }
+        "example": { "price": 990, "categories": ["hoodie","streetwear"] }
       },
 
       "Order": {
@@ -185,13 +199,13 @@
       "CategoryCreate": {
         "type": "object",
         "required": ["name"],
-        "properties": { "name": { "type": "string" }, "slug": { "type": "string" }, "parentId": { "type": "string", "description": "serial | uuid | _id" } },
-        "example": { "name": "Clothing" }
+        "properties": { "name": { "type": "string" }, "slug": { "type": "string" }, "parentId": { "type": "string", "description": "serial | uuid | _id | slug" } },
+        "example": { "name": "Hoodie" }
       },
       "CategoryUpdate": {
         "type": "object",
         "properties": { "name": { "type": "string" }, "slug": { "type": "string" }, "parentId": { "type": "string", "nullable": true } },
-        "example": { "name": "Men Clothing" }
+        "example": { "name": "Men Hoodies" }
       }
     }
   },
@@ -202,7 +216,7 @@
         "tags": ["Auth"],
         "summary": "Register",
         "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AuthRegisterRequest" } } } },
-        "responses": { "201": { "description": "Created" }, "409": { "description": "Conflict (email/username exists)", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } } }
+        "responses": { "201": { "description": "Created" }, "409": { "description": "Conflict", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } } }
       }
     },
     "/auth/login": {
@@ -259,7 +273,7 @@
         "summary": "Update roles (ADMIN)",
         "security": [{ "bearerAuth": [] }],
         "parameters": [{ "$ref": "#/components/parameters/IdPathParam" }],
-        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UserRolesUpdate" } } } },
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UserRolesUpdate" }, "example": { "roles": ["USER","SELLER"] } } } },
         "responses": { "200": { "description": "OK" }, "403": { "description": "Forbidden" }, "404": { "description": "Not found" } }
       }
     },
@@ -270,7 +284,10 @@
         "summary": "List listings",
         "parameters": [
           { "name": "q", "in": "query", "schema": { "type": "string" }, "description": "full-text search" },
-          { "name": "category", "in": "query", "schema": { "type": "string" }, "description": "category id (serial | uuid | _id)" },
+          { "name": "category", "in": "query", "schema": { "type": "string" }, "description": "μία κατηγορία (serial | uuid | _id | slug)" },
+          { "name": "categories", "in": "query", "schema": { "type": "array", "items": { "type": "string" } }, "style": "form", "explode": true, "description": "πολλαπλές κατηγορίες (repeat param)" },
+          { "name": "categoryMode", "in": "query", "schema": { "type": "string", "enum": ["any","all"], "default": "any" }, "description": "any = να ανήκει σε μία από τις κατηγορίες, all = σε όλες" },
+          { "name": "includeChildren", "in": "query", "schema": { "type": "boolean", "default": false }, "description": "συμπερίληψη απογόνων στην ιεραρχία" },
           { "name": "condition", "in": "query", "schema": { "type": "string", "enum": ["NEW_WITH_TAGS","NEW","EXCELLENT","GOOD","FAIR"] } },
           { "name": "priceMin", "in": "query", "schema": { "type": "number" } },
           { "name": "priceMax", "in": "query", "schema": { "type": "number" } },
@@ -352,7 +369,7 @@
         "tags": ["Categories"],
         "summary": "List categories",
         "parameters": [
-          { "name": "parent", "in": "query", "schema": { "type": "string" }, "description": "parent id (serial | uuid | _id) ή 'root'" },
+          { "name": "parent", "in": "query", "schema": { "type": "string" }, "description": "parent id (serial | uuid | _id | slug) ή 'root'" },
           { "name": "q", "in": "query", "schema": { "type": "string" } }
         ],
         "responses": { "200": { "description": "OK" } }
@@ -361,7 +378,7 @@
         "tags": ["Categories"],
         "summary": "Create category (ADMIN)",
         "security": [{ "bearerAuth": [] }],
-        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CategoryCreate" } } } },
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CategoryCreate" }, "example": { "name": "Hoodie" } } } },
         "responses": { "201": { "description": "Created" }, "403": { "description": "Forbidden" } }
       }
     },
