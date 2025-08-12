@@ -8,7 +8,10 @@ async function addFavorite(userId, listingObjectId) {
         { $setOnInsert: { userId, listingId: listingObjectId } },
         { upsert: true }
     );
-
+    const listing = await Listing.findById(listingObjectId).lean();
+    if (!listing || listing.status === 'HIDDEN' || listing.status === 'SOLD') {
+        const e = new Error('Listing not available'); e.status = 409; throw e;
+    }
     // αν πραγματικά δημιουργήθηκε νέο (upserted), αύξησε counter
     if (res.upsertedCount === 1) {
         await Listing.updateOne({ _id: listingObjectId }, { $inc: { 'metrics.favoritesCount': 1 } });
@@ -47,5 +50,7 @@ async function listFavorites(userId, { page = 1, limit = 20 } = {}) {
 
     return { items: mapped, page: Number(page), limit: Number(limit), total };
 }
+
+
 
 module.exports = { addFavorite, removeFavorite, listFavorites };
