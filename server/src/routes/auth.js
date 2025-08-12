@@ -9,4 +9,9 @@ router.post('/register', validateBody(registerSchema), ctrl.register);
 router.post('/login',    validateBody(loginSchema),    ctrl.login);
 router.patch('/password', requireAuth, validateBody(changePasswordSchema), ctrl.changePassword);
 
+router.post('/logout', (req, res) => {
+    res.clearCookie('accessToken', { httpOnly: true, sameSite: 'lax', secure: false });
+    res.json({ ok: true });
+});
+
 module.exports = router;
