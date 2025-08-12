@@ -13,9 +13,13 @@ const listingSchema = new mongoose.Schema({
     photos: [{ url: String, isCover: Boolean }],
     tags: [String],
     status: { type: String, enum: ['ACTIVE','RESERVED','SOLD','HIDDEN'], default: 'ACTIVE', index: true },
-    categoryId: { type: mongoose.Schema.Types.ObjectId, ref: 'Category', index: true },
+    categories: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Category', index: true }],
     publicId: { type: String, unique: true, index: true },
-    serial: { type: Number, unique: true, index: true }
+    serial: { type: Number, unique: true, index: true },
+    metrics: {
+        views: { type: Number, default: 0 },
+        favoritesCount: { type: Number, default: 0 }
+    },
 }, { timestamps: true });
 
 listingSchema.pre('save', async function(next){
