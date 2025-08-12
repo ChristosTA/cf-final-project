@@ -2,12 +2,15 @@
   "openapi": "3.0.3",
   "info": {
     "title": "Marketplace API",
-    "version": "1.5.0",
-    "description": "Auth, Users, Listings (με categories[]), Orders, Categories. Τα {id} και τα category references δέχονται serial | UUID | Mongo _id | (slug για categories)."
+    "version": "1.6.0",
+    "description": "Auth, Users, Listings (με photos), Orders, Categories. Όλα τα {id} δέχονται serial | UUID | Mongo _id (και στα categories τα slugs)."
   },
-  "servers": [{ "url": "http://localhost:4000/api" }],
+  "servers": [
+    { "url": "http://localhost:4000/api" }
+  ],
   "tags": [
     { "name": "Auth" },
+    { "name": "Me" },
     { "name": "Users" },
     { "name": "Listings" },
     { "name": "Orders" },
@@ -18,13 +21,8 @@
       "bearerAuth": { "type": "http", "scheme": "bearer", "bearerFormat": "JWT" }
     },
     "parameters": {
-      "IdPathParam": {
-        "name": "id",
-        "in": "path",
-        "required": true,
-        "schema": { "type": "string" },
-        "description": "serial | UUID | Mongo _id"
-      }
+      "IdPathParam": { "name": "id", "in": "path", "required": true, "schema": { "type": "string" }, "description": "serial | uuid | _id" },
+      "PhotoIdPathParam": { "name": "photoId", "in": "path", "required": true, "schema": { "type": "string" }, "description": "ObjectId του subdocument photo" }
     },
     "schemas": {
       "Error": {
@@ -59,27 +57,43 @@
             "type": "object",
             "properties": {
               "id": { "type": "string", "description": "public UUID" },
+              "serial": { "type": "integer" },
               "email": { "type": "string" },
               "username": { "type": "string" },
+              "name": { "type": "string" },
               "roles": { "type": "array", "items": { "type": "string", "enum": ["USER","SELLER","ADMIN"] } }
             }
           },
           "accessToken": { "type": "string" }
-        },
-        "example": {
-          "user": { "id": "2f1c1a84-65d6-4c2b-9c44-1c2f559b0a13", "email": "panos@gmail.com", "username": "panos", "roles": ["USER","SELLER"] },
-          "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6..."
         }
+      },
+
+      "ChangePasswordRequest": {
+        "type": "object",
+        "required": ["currentPassword","newPassword"],
+        "properties": { "currentPassword": { "type": "string" }, "newPassword": { "type": "string", "minLength": 6 } },
+        "example": { "currentPassword": "secret123", "newPassword": "newSecret123" }
+      },
+
+      "Me": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" }, "serial": { "type": "integer" },
+          "email": { "type": "string" }, "username": { "type": "string" }, "name": { "type": "string" },
+          "roles": { "type": "array", "items": { "type": "string" } }
+        }
+      },
+      "MeUpdateRequest": {
+        "type": "object",
+        "properties": { "name": { "type": "string" } },
+        "example": { "name": "Panos Updated" }
       },
 
       "User": {
         "type": "object",
         "properties": {
-          "id": { "type": "string", "description": "public UUID" },
-          "serial": { "type": "integer", "example": 7 },
-          "username": { "type": "string" },
-          "email": { "type": "string" },
-          "name": { "type": "string" },
+          "id": { "type": "string" }, "serial": { "type": "integer" },
+          "username": { "type": "string" }, "email": { "type": "string" }, "name": { "type": "string" },
           "roles": { "type": "array", "items": { "type": "string", "enum": ["USER","SELLER","ADMIN"] } },
           "createdAt": { "type": "string", "format": "date-time" },
           "updatedAt": { "type": "string", "format": "date-time" }
@@ -88,31 +102,56 @@
       "UserRolesUpdate": {
         "type": "object",
         "required": ["roles"],
-        "properties": {
-          "roles": { "type": "array", "items": { "type": "string", "enum": ["USER","SELLER","ADMIN"] }, "minItems": 1 }
-        },
+        "properties": { "roles": { "type": "array", "items": { "type": "string", "enum": ["USER","SELLER","ADMIN"] }, "minItems": 1 } },
         "example": { "roles": ["USER","SELLER"] }
+      },
+
+      "Photo": {
+        "type": "object",
+        "properties": {
+          "_id": { "type": "string" },
+          "url": { "type": "string" },
+          "isCover": { "type": "boolean" }
+        }
+      },
+
+      "Category": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" }, "name": { "type": "string" }, "slug": { "type": "string" },
+          "parentId": { "type": "string", "nullable": true },
+          "path": { "type": "array", "items": { "type": "string" } }
+        }
+      },
+      "CategoryCreate": {
+        "type": "object",
+        "required": ["name"],
+        "properties": { "name": { "type": "string" }, "slug": { "type": "string" }, "parentId": { "type": "string", "description": "serial | uuid | _id", "nullable": true } },
+        "example": { "name": "Hoodie" }
+      },
+      "CategoryUpdate": {
+        "type": "object",
+        "properties": { "name": { "type": "string" }, "slug": { "type": "string" }, "parentId": { "type": "string", "nullable": true } },
+        "example": { "name": "Men Hoodies" }
       },
 
       "Listing": {
         "type": "object",
         "properties": {
-          "id": { "type": "string", "description": "public UUID" },
-          "serial": { "type": "integer", "example": 5 },
+          "id": { "type": "string" }, "serial": { "type": "integer" },
           "sellerId": { "type": "string" },
-          "title": { "type": "string" },
-          "description": { "type": "string" },
+          "title": { "type": "string" }, "description": { "type": "string" },
           "condition": { "type": "string", "enum": ["NEW_WITH_TAGS","NEW","EXCELLENT","GOOD","FAIR"] },
           "price": { "type": "number", "description": "λεπτά ευρώ" },
           "currency": { "type": "string", "example": "EUR" },
           "tags": { "type": "array", "items": { "type": "string" } },
           "status": { "type": "string", "enum": ["ACTIVE","RESERVED","SOLD","HIDDEN"] },
+          "photos": { "type": "array", "items": { "$ref": "#/components/schemas/Photo" } },
           "categories": {
             "type": "array",
             "items": { "type": "object", "properties": { "id": { "type": "string" }, "name": { "type": "string" }, "slug": { "type": "string" } } }
           },
-          "createdAt": { "type": "string", "format": "date-time" },
-          "updatedAt": { "type": "string", "format": "date-time" }
+          "createdAt": { "type": "string", "format": "date-time" }, "updatedAt": { "type": "string", "format": "date-time" }
         }
       },
       "ListingCreate": {
@@ -125,87 +164,45 @@
           "price": { "type": "number" },
           "currency": { "type": "string", "example": "EUR" },
           "tags": { "type": "array", "items": { "type": "string" } },
-          "categories": {
-            "description": "serial | uuid | _id | slug — μπορεί να είναι string ή array",
-            "oneOf": [
-              { "type": "string" },
-              { "type": "array", "items": { "type": "string" }, "minItems": 1 }
-            ]
-          }
+          "categories": { "type": "array", "items": { "type": "string" }, "description": "array από id (serial | uuid | _id) ή slug" }
         },
         "example": {
-          "title": "Adidas Hoodie",
+          "title": "Nike Hoodie",
           "description": "Ζεστό, λίγο φορεμένο",
           "condition": "GOOD",
           "price": 1090,
           "currency": "EUR",
           "tags": ["hoodie","adidas"],
-          "categories": ["hoodie", "1"]
+          "categories": ["hoodie","1"]
         }
       },
       "ListingUpdate": {
         "type": "object",
         "properties": {
-          "title": { "type": "string" },
-          "description": { "type": "string" },
+          "title": { "type": "string" }, "description": { "type": "string" },
           "condition": { "type": "string", "enum": ["NEW_WITH_TAGS","NEW","EXCELLENT","GOOD","FAIR"] },
-          "price": { "type": "number" },
-          "currency": { "type": "string" },
+          "price": { "type": "number" }, "currency": { "type": "string" },
           "tags": { "type": "array", "items": { "type": "string" } },
           "status": { "type": "string", "enum": ["ACTIVE","RESERVED","SOLD","HIDDEN"] },
-          "categories": {
-            "description": "serial | uuid | _id | slug — string ή array",
-            "oneOf": [
-              { "type": "string" },
-              { "type": "array", "items": { "type": "string" }, "minItems": 1 }
-            ]
-          }
-        },
-        "example": { "price": 990, "categories": ["hoodie","streetwear"] }
+          "categories": { "type": "array", "items": { "type": "string" } }
+        }
       },
 
       "Order": {
         "type": "object",
         "properties": {
-          "id": { "type": "string", "description": "public UUID" },
-          "serial": { "type": "integer", "example": 12 },
+          "id": { "type": "string" }, "serial": { "type": "integer" },
           "listingId": { "type": "string" },
-          "sellerId": { "type": "string" },
-          "buyerId": { "type": "string" },
+          "sellerId": { "type": "string" }, "buyerId": { "type": "string" },
           "status": { "type": "string", "enum": ["REQUESTED","ACCEPTED","DECLINED","CANCELLED","COMPLETED"] },
-          "createdAt": { "type": "string", "format": "date-time" },
-          "updatedAt": { "type": "string", "format": "date-time" }
+          "createdAt": { "type": "string", "format": "date-time" }, "updatedAt": { "type": "string", "format": "date-time" }
         }
       },
       "CreateOrderRequest": {
         "type": "object",
         "required": ["listingId"],
-        "properties": {
-          "listingId": { "type": "string", "description": "serial | uuid | _id του listing" }
-        },
+        "properties": { "listingId": { "type": "string", "description": "serial | uuid | _id του listing" } },
         "example": { "listingId": "5" }
-      },
-
-      "Category": {
-        "type": "object",
-        "properties": {
-          "id": { "type": "string" },
-          "name": { "type": "string" },
-          "slug": { "type": "string" },
-          "parentId": { "type": "string", "nullable": true },
-          "path": { "type": "array", "items": { "type": "string" } }
-        }
-      },
-      "CategoryCreate": {
-        "type": "object",
-        "required": ["name"],
-        "properties": { "name": { "type": "string" }, "slug": { "type": "string" }, "parentId": { "type": "string", "description": "serial | uuid | _id | slug" } },
-        "example": { "name": "Hoodie" }
-      },
-      "CategoryUpdate": {
-        "type": "object",
-        "properties": { "name": { "type": "string" }, "slug": { "type": "string" }, "parentId": { "type": "string", "nullable": true } },
-        "example": { "name": "Men Hoodies" }
       }
     }
   },
@@ -216,7 +213,7 @@
         "tags": ["Auth"],
         "summary": "Register",
         "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AuthRegisterRequest" } } } },
-        "responses": { "201": { "description": "Created" }, "409": { "description": "Conflict", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } } }
+        "responses": { "201": { "description": "Created" }, "409": { "description": "Conflict" } }
       }
     },
     "/auth/login": {
@@ -230,13 +227,33 @@
     "/auth/password": {
       "patch": {
         "tags": ["Auth"],
-        "summary": "Change password (logged-in)",
+        "summary": "Change password",
         "security": [{ "bearerAuth": [] }],
-        "requestBody": {
-          "required": true,
-          "content": { "application/json": { "schema": { "type": "object", "required": ["currentPassword","newPassword"], "properties": { "currentPassword": { "type": "string" }, "newPassword": { "type": "string" } }, "example": { "currentPassword": "secret123", "newPassword": "newSecret123" } } } }
-        },
-        "responses": { "200": { "description": "Password changed" }, "401": { "description": "Unauthorized" } }
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ChangePasswordRequest" } } } },
+        "responses": { "200": { "description": "OK" } }
+      }
+    },
+    "/auth/logout": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Logout (client-side: απλά σβήνεις το token)",
+        "responses": { "200": { "description": "OK" } }
+      }
+    },
+
+    "/me": {
+      "get": {
+        "tags": ["Me"],
+        "summary": "Current user",
+        "security": [{ "bearerAuth": [] }],
+        "responses": { "200": { "description": "OK", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Me" } } } } }
+      },
+      "put": {
+        "tags": ["Me"],
+        "summary": "Update my profile (name)",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MeUpdateRequest" } } } },
+        "responses": { "200": { "description": "OK" } }
       }
     },
 
@@ -245,26 +262,23 @@
         "tags": ["Users"],
         "summary": "List users (ADMIN)",
         "security": [{ "bearerAuth": [] }],
-        "responses": {
-          "200": { "description": "OK", "content": { "application/json": { "schema": { "type": "object", "properties": { "items": { "type": "array", "items": { "$ref": "#/components/schemas/User" } } } } } } },
-          "403": { "description": "Forbidden" }
-        }
+        "responses": { "200": { "description": "OK" }, "403": { "description": "Forbidden" } }
       }
     },
     "/users/{id}": {
       "get": {
         "tags": ["Users"],
-        "summary": "Get user (serial | uuid | _id)",
+        "summary": "Get user",
         "security": [{ "bearerAuth": [] }],
         "parameters": [{ "$ref": "#/components/parameters/IdPathParam", "example": "7" }],
-        "responses": { "200": { "description": "OK", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/User" } } } }, "404": { "description": "Not found" } }
+        "responses": { "200": { "description": "OK" }, "404": { "description": "Not found" } }
       },
       "delete": {
         "tags": ["Users"],
         "summary": "Delete user (ADMIN)",
         "security": [{ "bearerAuth": [] }],
         "parameters": [{ "$ref": "#/components/parameters/IdPathParam" }],
-        "responses": { "200": { "description": "OK" }, "403": { "description": "Forbidden" }, "404": { "description": "Not found" } }
+        "responses": { "200": { "description": "OK" } }
       }
     },
     "/users/{id}/roles": {
@@ -273,103 +287,17 @@
         "summary": "Update roles (ADMIN)",
         "security": [{ "bearerAuth": [] }],
         "parameters": [{ "$ref": "#/components/parameters/IdPathParam" }],
-        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UserRolesUpdate" }, "example": { "roles": ["USER","SELLER"] } } } },
-        "responses": { "200": { "description": "OK" }, "403": { "description": "Forbidden" }, "404": { "description": "Not found" } }
-      }
-    },
-
-    "/listings": {
-      "get": {
-        "tags": ["Listings"],
-        "summary": "List listings",
-        "parameters": [
-          { "name": "q", "in": "query", "schema": { "type": "string" }, "description": "full-text search" },
-          { "name": "category", "in": "query", "schema": { "type": "string" }, "description": "μία κατηγορία (serial | uuid | _id | slug)" },
-          { "name": "categories", "in": "query", "schema": { "type": "array", "items": { "type": "string" } }, "style": "form", "explode": true, "description": "πολλαπλές κατηγορίες (repeat param)" },
-          { "name": "categoryMode", "in": "query", "schema": { "type": "string", "enum": ["any","all"], "default": "any" }, "description": "any = να ανήκει σε μία από τις κατηγορίες, all = σε όλες" },
-          { "name": "includeChildren", "in": "query", "schema": { "type": "boolean", "default": false }, "description": "συμπερίληψη απογόνων στην ιεραρχία" },
-          { "name": "condition", "in": "query", "schema": { "type": "string", "enum": ["NEW_WITH_TAGS","NEW","EXCELLENT","GOOD","FAIR"] } },
-          { "name": "priceMin", "in": "query", "schema": { "type": "number" } },
-          { "name": "priceMax", "in": "query", "schema": { "type": "number" } },
-          { "name": "sort", "in": "query", "schema": { "type": "string", "enum": ["newest","price_asc","price_desc"] } },
-          { "name": "page", "in": "query", "schema": { "type": "integer" }, "example": 1 },
-          { "name": "limit", "in": "query", "schema": { "type": "integer" }, "example": 20 }
-        ],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UserRolesUpdate" } } } },
         "responses": { "200": { "description": "OK" } }
-      },
-      "post": {
-        "tags": ["Listings"],
-        "summary": "Create listing (SELLER/ADMIN)",
-        "security": [{ "bearerAuth": [] }],
-        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ListingCreate" } } } },
-        "responses": { "201": { "description": "Created", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Listing" } } } }, "401": { "description": "Unauthorized" }, "422": { "description": "Validation error" } }
       }
     },
-    "/listings/{id}": {
-      "get": {
-        "tags": ["Listings"],
-        "summary": "Get listing (serial | uuid | _id)",
-        "parameters": [{ "$ref": "#/components/parameters/IdPathParam", "example": "5" }],
-        "responses": { "200": { "description": "OK", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Listing" } } } }, "404": { "description": "Not found" } }
-      },
-      "put": {
-        "tags": ["Listings"],
-        "summary": "Update listing",
-        "security": [{ "bearerAuth": [] }],
-        "parameters": [{ "$ref": "#/components/parameters/IdPathParam" }],
-        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ListingUpdate" } } } },
-        "responses": { "200": { "description": "OK" }, "403": { "description": "Forbidden" }, "404": { "description": "Not found" } }
-      },
-      "delete": {
-        "tags": ["Listings"],
-        "summary": "Delete listing",
-        "security": [{ "bearerAuth": [] }],
-        "parameters": [{ "$ref": "#/components/parameters/IdPathParam" }],
-        "responses": { "200": { "description": "OK" }, "403": { "description": "Forbidden" }, "404": { "description": "Not found" } }
-      }
-    },
-
-    "/orders": {
-      "get": {
-        "tags": ["Orders"],
-        "summary": "List my orders (buyer/seller)",
-        "security": [{ "bearerAuth": [] }],
-        "parameters": [
-          { "name": "role", "in": "query", "schema": { "type": "string", "enum": ["buyer","seller"] } },
-          { "name": "status", "in": "query", "schema": { "type": "string", "enum": ["REQUESTED","ACCEPTED","DECLINED","CANCELLED","COMPLETED"] } },
-          { "name": "page", "in": "query", "schema": { "type": "integer" }, "example": 1 },
-          { "name": "limit", "in": "query", "schema": { "type": "integer" }, "example": 20 }
-        ],
-        "responses": { "200": { "description": "OK" }, "401": { "description": "Unauthorized" } }
-      },
-      "post": {
-        "tags": ["Orders"],
-        "summary": "Create order (reserve listing)",
-        "security": [{ "bearerAuth": [] }],
-        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CreateOrderRequest" }, "example": { "listingId": "5" } } } },
-        "responses": { "201": { "description": "Created", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Order" } } } }, "401": { "description": "Unauthorized" }, "404": { "description": "Listing not found" }, "409": { "description": "Listing not available" } }
-      }
-    },
-    "/orders/{id}": {
-      "get": {
-        "tags": ["Orders"],
-        "summary": "Get order (serial | uuid | _id)",
-        "security": [{ "bearerAuth": [] }],
-        "parameters": [{ "$ref": "#/components/parameters/IdPathParam", "example": "12" }],
-        "responses": { "200": { "description": "OK", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Order" } } } }, "403": { "description": "Forbidden" }, "404": { "description": "Not found" } }
-      }
-    },
-    "/orders/{id}/accept":  { "patch": { "tags": ["Orders"], "summary": "Accept (seller)",   "security": [{ "bearerAuth": [] }], "parameters": [{ "$ref": "#/components/parameters/IdPathParam" }], "responses": { "200": { "description": "OK" }, "403": { "description": "Forbidden" }, "409": { "description": "Invalid state" }, "404": { "description": "Not found" } } } },
-    "/orders/{id}/decline": { "patch": { "tags": ["Orders"], "summary": "Decline (seller)",  "security": [{ "bearerAuth": [] }], "parameters": [{ "$ref": "#/components/parameters/IdPathParam" }], "responses": { "200": { "description": "OK" }, "403": { "description": "Forbidden" }, "409": { "description": "Invalid state" }, "404": { "description": "Not found" } } } },
-    "/orders/{id}/cancel":  { "patch": { "tags": ["Orders"], "summary": "Cancel (buyer)",    "security": [{ "bearerAuth": [] }], "parameters": [{ "$ref": "#/components/parameters/IdPathParam" }], "responses": { "200": { "description": "OK" }, "403": { "description": "Forbidden" }, "409": { "description": "Invalid state" }, "404": { "description": "Not found" } } } },
-    "/orders/{id}/complete":{ "patch": { "tags": ["Orders"], "summary": "Complete (seller)", "security": [{ "bearerAuth": [] }], "parameters": [{ "$ref": "#/components/parameters/IdPathParam" }], "responses": { "200": { "description": "OK" }, "403": { "description": "Forbidden" }, "409": { "description": "Invalid state" }, "404": { "description": "Not found" } } } },
 
     "/categories": {
       "get": {
         "tags": ["Categories"],
         "summary": "List categories",
         "parameters": [
-          { "name": "parent", "in": "query", "schema": { "type": "string" }, "description": "parent id (serial | uuid | _id | slug) ή 'root'" },
+          { "name": "parent", "in": "query", "schema": { "type": "string" }, "description": "parent id (serial | uuid | _id) ή 'root'" },
           { "name": "q", "in": "query", "schema": { "type": "string" } }
         ],
         "responses": { "200": { "description": "OK" } }
@@ -378,8 +306,8 @@
         "tags": ["Categories"],
         "summary": "Create category (ADMIN)",
         "security": [{ "bearerAuth": [] }],
-        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CategoryCreate" }, "example": { "name": "Hoodie" } } } },
-        "responses": { "201": { "description": "Created" }, "403": { "description": "Forbidden" } }
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CategoryCreate" } } } },
+        "responses": { "201": { "description": "Created" } }
       }
     },
     "/categories/{id}": {
@@ -395,15 +323,139 @@
         "security": [{ "bearerAuth": [] }],
         "parameters": [{ "$ref": "#/components/parameters/IdPathParam" }],
         "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CategoryUpdate" } } } },
-        "responses": { "200": { "description": "OK" }, "403": { "description": "Forbidden" }, "404": { "description": "Not found" } }
+        "responses": { "200": { "description": "OK" } }
       },
       "delete": {
         "tags": ["Categories"],
         "summary": "Delete category (ADMIN)",
         "security": [{ "bearerAuth": [] }],
         "parameters": [{ "$ref": "#/components/parameters/IdPathParam" }],
+        "responses": { "200": { "description": "OK" } }
+      }
+    },
+
+    "/listings": {
+      "get": {
+        "tags": ["Listings"],
+        "summary": "List listings",
+        "parameters": [
+          { "name": "q", "in": "query", "schema": { "type": "string" }, "description": "full-text" },
+          { "name": "category", "in": "query", "schema": { "type": "string" }, "description": "category id/slug" },
+          { "name": "condition", "in": "query", "schema": { "type": "string", "enum": ["NEW_WITH_TAGS","NEW","EXCELLENT","GOOD","FAIR"] } },
+          { "name": "priceMin", "in": "query", "schema": { "type": "number" } },
+          { "name": "priceMax", "in": "query", "schema": { "type": "number" } },
+          { "name": "sort", "in": "query", "schema": { "type": "string", "enum": ["newest","price_asc","price_desc"] } },
+          { "name": "page", "in": "query", "schema": { "type": "integer" }, "example": 1 },
+          { "name": "limit", "in": "query", "schema": { "type": "integer" }, "example": 20 }
+        ],
+        "responses": { "200": { "description": "OK" } }
+      },
+      "post": {
+        "tags": ["Listings"],
+        "summary": "Create listing (SELLER/ADMIN)",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ListingCreate" } } } },
+        "responses": { "201": { "description": "Created", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Listing" } } } } }
+      }
+    },
+    "/listings/{id}": {
+      "get": {
+        "tags": ["Listings"],
+        "summary": "Get listing",
+        "parameters": [{ "$ref": "#/components/parameters/IdPathParam", "example": "5" }],
+        "responses": { "200": { "description": "OK", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Listing" } } } }, "404": { "description": "Not found" } }
+      },
+      "put": {
+        "tags": ["Listings"],
+        "summary": "Update listing",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "$ref": "#/components/parameters/IdPathParam" }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ListingUpdate" } } } },
+        "responses": { "200": { "description": "OK" } }
+      },
+      "delete": {
+        "tags": ["Listings"],
+        "summary": "Delete listing",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "$ref": "#/components/parameters/IdPathParam" }],
+        "responses": { "200": { "description": "OK" } }
+      }
+    },
+
+    "/listings/{id}/photos": {
+      "post": {
+        "tags": ["Listings"],
+        "summary": "Upload listing photos (SELLER/ADMIN)",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "$ref": "#/components/parameters/IdPathParam" }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "photos": { "type": "array", "items": { "type": "string", "format": "binary" } }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "201": { "description": "Created" }, "403": { "description": "Forbidden" }, "404": { "description": "Not found" } }
+      }
+    },
+    "/listings/{id}/photos/{photoId}": {
+      "delete": {
+        "tags": ["Listings"],
+        "summary": "Delete one photo",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "$ref": "#/components/parameters/IdPathParam" }, { "$ref": "#/components/parameters/PhotoIdPathParam" }],
+        "responses": { "200": { "description": "OK" }, "404": { "description": "Not found" } }
+      }
+    },
+    "/listings/{id}/photos/{photoId}/cover": {
+      "patch": {
+        "tags": ["Listings"],
+        "summary": "Set cover photo",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "$ref": "#/components/parameters/IdPathParam" }, { "$ref": "#/components/parameters/PhotoIdPathParam" }],
+        "responses": { "200": { "description": "OK" }, "404": { "description": "Not found" } }
+      }
+    },
+
+    "/orders": {
+      "get": {
+        "tags": ["Orders"],
+        "summary": "List my orders",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "role", "in": "query", "schema": { "type": "string", "enum": ["buyer","seller"] } },
+          { "name": "status", "in": "query", "schema": { "type": "string", "enum": ["REQUESTED","ACCEPTED","DECLINED","CANCELLED","COMPLETED"] } },
+          { "name": "page", "in": "query", "schema": { "type": "integer" } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer" } }
+        ],
+        "responses": { "200": { "description": "OK" } }
+      },
+      "post": {
+        "tags": ["Orders"],
+        "summary": "Create order (reserve listing)",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CreateOrderRequest" } } } },
+        "responses": { "201": { "description": "Created" }, "404": { "description": "Listing not found" }, "409": { "description": "Listing not available" } }
+      }
+    },
+    "/orders/{id}": {
+      "get": {
+        "tags": ["Orders"],
+        "summary": "Get order",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "$ref": "#/components/parameters/IdPathParam", "example": "12" }],
         "responses": { "200": { "description": "OK" }, "403": { "description": "Forbidden" }, "404": { "description": "Not found" } }
       }
-    }
+    },
+    "/orders/{id}/accept":  { "patch": { "tags": ["Orders"], "summary": "Accept (seller)",   "security": [{ "bearerAuth": [] }], "parameters": [{ "$ref": "#/components/parameters/IdPathParam" }], "responses": { "200": { "description": "OK" } } } },
+    "/orders/{id}/decline": { "patch": { "tags": ["Orders"], "summary": "Decline (seller)",  "security": [{ "bearerAuth": [] }], "parameters": [{ "$ref": "#/components/parameters/IdPathParam" }], "responses": { "200": { "description": "OK" } } } },
+    "/orders/{id}/cancel":  { "patch": { "tags": ["Orders"], "summary": "Cancel (buyer)",    "security": [{ "bearerAuth": [] }], "parameters": [{ "$ref": "#/components/parameters/IdPathParam" }], "responses": { "200": { "description": "OK" } } } },
+    "/orders/{id}/complete":{ "patch": { "tags": ["Orders"], "summary": "Complete (seller)", "security": [{ "bearerAuth": [] }], "parameters": [{ "$ref": "#/components/parameters/IdPathParam" }], "responses": { "200": { "description": "OK" } } } }
   }
 }
