@@ -7,7 +7,7 @@ const userSchema = new mongoose.Schema({
     username: { type: String, required: true, trim: true, index: true, unique: true },
     email: { type: String, required: true, unique: true, lowercase: true, trim: true, index: true },
     passwordHash: { type: String, required: true },
-    roles: { type: [String], enum: ['USER','ADMIN','SELLER'], default: ['USER'], index: true },
+    roles: { type: [String], enum: ['USER','ADMIN','SELLER',"BUYER"], default: ['USER'], index: true },
     publicId: { type: String, unique: true, index: true },
     serial: { type: Number, unique: true, index: true }
 }, { timestamps: true });
@@ -37,4 +37,4 @@ userSchema.set('toJSON', {
 
 userSchema.set('toObject', { virtuals: true });
 
-module.exports = mongoose.model('User', userSchema);
+module.exports = mongoose.models.User     || mongoose.model('User', userSchema);

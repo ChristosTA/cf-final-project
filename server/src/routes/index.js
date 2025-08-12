@@ -6,6 +6,7 @@ router.use('/auth', require('./auth'));
 router.use('/users', require('./users'));
 router.use('/categories', require('./categories'));
 router.use('/listings', require('./listings'));
+router.use('/orders', require('./orders'));
 
 
 const { requireAuth } = require('../middlewares/auth');
