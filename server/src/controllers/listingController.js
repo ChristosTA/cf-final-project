@@ -8,14 +8,15 @@ exports.list = asyncHandler(async (req, res) => {
 });
 
 exports.create = asyncHandler(async (req, res) => {
-    const item = await listings.create(req.user.id, req.body); // categories είναι ήδη [ObjectId]
+    const item = await listings.create(req.user.id, req.body);
     res.status(201).json(item);
 });
 
 exports.get = asyncHandler(async (req, res) => {
-    const doc = await listings.getAndIncrementViews(req.params.id); // εδώ το id είναι ήδη Mongo _id
-    if (!doc) return res.status(404).json({ message: 'Not found' });
-    res.json(doc);
+    // εδώ το :id έχει ήδη γίνει ObjectId από το resolveSerialFactory
+    const it = await listings.getAndIncrementViews(req.params.id);
+    if (!it) return res.status(404).json({ message: 'Not found' });
+    res.json(it);
 });
 
 exports.update = asyncHandler(async (req, res) => {
@@ -24,7 +25,21 @@ exports.update = asyncHandler(async (req, res) => {
 });
 
 exports.remove = asyncHandler(async (req, res) => {
-    await listings.deleteListing(req.params.id);
+    await listings.deleteListing(req.params.id, req.user);
     res.json({ ok: true });
 });
 
+exports.addPhotos = asyncHandler(async (req, res) => {
+    const doc = await listings.addPhotos(req.user, req.params.id, req.files, req);
+    res.status(201).json(doc);
+});
+
+exports.removePhoto = asyncHandler(async (req, res) => {
+    await listings.removePhoto(req.user, req.params.id, req.params.photoId);
+    res.json({ ok: true });
+});
+
+exports.setCoverPhoto = asyncHandler(async (req, res) => {
+    const doc = await listings.setCoverPhoto(req.user, req.params.id, req.params.photoId);
+    res.json(doc);
+});

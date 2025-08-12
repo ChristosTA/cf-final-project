@@ -4,6 +4,7 @@ const { validateBody, validateQuery } = require('../middlewares/validate');
 const { requireAuth, requireRole } = require('../middlewares/auth');
 const { listQuerySchema, createListingSchema, updateListingSchema } = require('../api/validators/listingSchemas');
 const ctrl = require('../controllers/listingController');
+const upload = require('../middlewares/upload');
 
 const resolveSerialFactory = require('../middlewares/resolveSerialFactory');
 const resolveIdsArrayFactory = require('../middlewares/resolveIdsArrayFactory');
@@ -41,6 +42,20 @@ router.put('/:id',
 router.get('/:id',
     resolveListingId,
     ctrl.get
+);
+
+router.post('/:id/photos',
+    requireAuth,
+    requireRole('SELLER','ADMIN'),
+    resolveListingId,
+    upload.array('photos', 6),
+    ctrl.addPhotos
+);
+
+router.delete('/:id/photos/:photoId',
+    requireAuth,
+    resolveListingId,
+    ctrl.removePhoto
 );
 
 router.delete('/:id',
