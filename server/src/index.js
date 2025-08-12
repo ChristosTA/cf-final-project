@@ -5,6 +5,7 @@ const cors = require('cors');
 const morgan = require('morgan');
 const cookieParser = require('cookie-parser');
 const mongoose = require('mongoose');
+const path = require('path');
 
 const app = express();
 
@@ -27,11 +28,12 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.use(morgan('dev'));
 
+
 // Routes
 const swaggerUi = require('swagger-ui-express');
 const swaggerDoc = require('./swagger.json');
 app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerDoc));
-
+app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
 app.use('/api', require('./routes'));
 
 // Health
