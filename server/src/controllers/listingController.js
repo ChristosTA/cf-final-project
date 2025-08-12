@@ -8,19 +8,14 @@ exports.list = asyncHandler(async (req, res) => {
 });
 
 exports.create = asyncHandler(async (req, res) => {
-    const item = await listings.create(req.user.id, req.body);
+    const item = await listings.create(req.user.id, req.body); // categories είναι ήδη [ObjectId]
     res.status(201).json(item);
 });
 
 exports.get = asyncHandler(async (req, res) => {
-    const it = await listings.getByIdOrPublicId(req.params.id);
-    if (!it) return res.status(404).json({ message: 'Not found' });
-    res.json(it);
-});
-
-exports.remove = asyncHandler(async (req, res) => {
-    await listings.deleteListing(req.params.id);
-    res.json({ ok: true });
+    const doc = await listings.getAndIncrementViews(req.params.id); // εδώ το id είναι ήδη Mongo _id
+    if (!doc) return res.status(404).json({ message: 'Not found' });
+    res.json(doc);
 });
 
 exports.update = asyncHandler(async (req, res) => {
@@ -28,4 +23,8 @@ exports.update = asyncHandler(async (req, res) => {
     res.json(updated);
 });
 
+exports.remove = asyncHandler(async (req, res) => {
+    await listings.deleteListing(req.params.id);
+    res.json({ ok: true });
+});
 

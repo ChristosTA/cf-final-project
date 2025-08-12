@@ -1,38 +1,52 @@
+// src/routes/listings.js
 const router = require('express').Router();
 const { validateBody, validateQuery } = require('../middlewares/validate');
 const { requireAuth, requireRole } = require('../middlewares/auth');
-const { listQuerySchema, createListingSchema, updateListingSchema} = require('../api/validators/listingSchemas');
+const { listQuerySchema, createListingSchema, updateListingSchema } = require('../api/validators/listingSchemas');
 const ctrl = require('../controllers/listingController');
+
 const resolveSerialFactory = require('../middlewares/resolveSerialFactory');
+const resolveIdsArrayFactory = require('../middlewares/resolveIdsArrayFactory');
+
 const Listing = require('../models/listing.Model');
+const Category = require('../models/category.Model');
 
-const resolveListingSerial = resolveSerialFactory(Listing);
+const resolveListingId   = resolveSerialFactory(Listing);
+// Μετατρέπει body.categories (['hoodie', ...]) -> [ObjectId, ...]
+const resolveBodyCategories  = resolveIdsArrayFactory(Category, 'categories', 'body');
+// Μετατρέπει query.categories (π.χ. ['hoodie'] ή 'hoodie') -> [ObjectId, ...]
+const resolveQueryCategories = resolveIdsArrayFactory(Category, 'categories', 'query');
 
-router.get('/', validateQuery(listQuerySchema), ctrl.list);
+router.get('/',
+    validateQuery(listQuerySchema),
+    resolveQueryCategories,
+    ctrl.list
+);
 
 router.post('/',
-    requireAuth,
-    requireRole('SELLER','ADMIN'),
+    requireAuth, requireRole('SELLER','ADMIN'),
     validateBody(createListingSchema),
+    resolveBodyCategories,
     ctrl.create
 );
 
-router.delete('/:id',
-    requireAuth,
-    requireRole('SELLER','ADMIN'),
-    resolveListingSerial,
-    ctrl.remove
-);
-
-router.get('/:id', resolveListingSerial, ctrl.get);
-
 router.put('/:id',
-    requireAuth,
-    requireRole('SELLER','ADMIN'),
-    resolveListingSerial,
+    requireAuth, requireRole('SELLER','ADMIN'),
+    resolveListingId,
     validateBody(updateListingSchema),
+    resolveBodyCategories,
     ctrl.update
 );
 
+router.get('/:id',
+    resolveListingId,
+    ctrl.get
+);
+
+router.delete('/:id',
+    requireAuth, requireRole('SELLER','ADMIN'),
+    resolveListingId,
+    ctrl.remove
+);
 
 module.exports = router;
