@@ -8,12 +8,17 @@ exports.list = asyncHandler(async (req, res) => {
 exports.get = asyncHandler(async (req, res) => {
     const c = await cats.get(req.params.slugOrId);
     if (!c) return res.status(404).json({ message: 'Not found' });
-    res.json(c);
+    const out = { ...c, id: (c.id || c._id?.toString()) };
+    delete out._id; delete out.__v;
+    res.json(out);
 });
 
 exports.create = asyncHandler(async (req, res) => {
-    const c = await cats.create(req.body);
-    res.status(201).json(c);
+    const c = await cats.create(req.body); // αν επιστρέφει lean()
+    // normalize (αν χρειάζεται)
+    const out = { ...c, id: (c.id || c._id?.toString()) };
+    delete out._id; delete out.__v;
+    res.status(201).json(out);
 });
 
 exports.update = asyncHandler(async (req, res) => {

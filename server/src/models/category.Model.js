@@ -18,9 +18,12 @@ categorySchema.set('toJSON', {
     virtuals: true,
     transform(doc, ret) {
         ret.id = ret._id.toString();
-        delete ret._id; delete ret.__v;
+        delete ret._id;
+        delete ret.__v;
     }
 });
+
 categorySchema.set('toObject', { virtuals: true });
+
 
 module.exports = mongoose.models.Category || mongoose.model('Category', categorySchema);
