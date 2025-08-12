@@ -23,4 +23,4 @@ categorySchema.set('toJSON', {
 });
 categorySchema.set('toObject', { virtuals: true });
 
-module.exports = mongoose.model('Category', categorySchema);
+module.exports = mongoose.models.Category || mongoose.model('Category', categorySchema);
