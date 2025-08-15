@@ -46,9 +46,8 @@ router.get('/:id',
 
 router.post('/:id/photos',
     requireAuth,
-    requireRole('SELLER','ADMIN'),
     resolveListingId,
-    upload.array('photos', 6),
+    upload.array('photos', 5), // <---- multipart field name: photos
     ctrl.addPhotos
 );
 

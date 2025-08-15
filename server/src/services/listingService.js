@@ -4,6 +4,10 @@ const Category = require('../models/category.Model');
 const path = require('path');
 const fs = require('fs');
 const { ensureOwnerOrAdmin, isAdmin } = require('../utils/permissions');
+const getStorage = require('../config/storage');
+const { requireObjectId } = require('../utils/findByAnyId');
+
+
 
 /* ---------- helpers ---------- */
 function normalizeListing(doc) {
@@ -18,6 +22,51 @@ function normalizeListing(doc) {
     }
     return o;
 }
+
+function buildVariants(photo) {
+    const { cloudinary } = getStorage();
+    if (photo.provider !== 'cloudinary' || !cloudinary || !photo.key) return [];
+
+    // Χρησιμοποιούμε public_id (key) για να παράγουμε URLs
+    const key = photo.key;
+
+    return [
+        {
+            name: 'thumb',
+            url: cloudinary.url(key, {
+                width: 200, height: 200, crop: 'fill', gravity: 'auto',
+                quality: 'auto', fetch_format: 'auto'
+            })
+        },
+        {
+            name: 'sm',
+            url: cloudinary.url(key, {
+                width: 400, height: 400, crop: 'fill', gravity: 'auto',
+                quality: 'auto', fetch_format: 'auto'
+            })
+        },
+        {
+            name: 'md',
+            url: cloudinary.url(key, {
+                width: 800, crop: 'fill', gravity: 'auto',
+                quality: 'auto', fetch_format: 'auto'
+            })
+        }
+    ];
+}
+
+function serializeListing(doc) {
+    const obj = doc.toObject ? doc.toObject() : doc;
+    if (Array.isArray(obj.photos)) {
+        obj.photos = obj.photos.map(p => ({
+            ...p,
+            variants: buildVariants(p)
+        }));
+    }
+    return obj;
+}
+
+
 
 
 
@@ -67,6 +116,10 @@ async function list(query) {
     if (catIds.length) {
         const expanded = await expandDescendantsIfNeeded(catIds, includeChildren);
         filter.categories = (categoryMode === 'all') ? { $all: expanded } : { $in: expanded };
+    }
+    if (qry.seller) {
+        const sellerObjId = await requireObjectId(require('../models/user.Model'), qry.seller, 'User');
+        filter.sellerId = sellerObjId;
     }
 
     const projection = q ? { score: { $meta: 'textScore' } } : undefined;
@@ -181,46 +234,65 @@ async function deleteListing(id, user) {
 }
 
 
-async function addPhotos(user, listingId, files, req) {
+async function addPhotos(listingId, files, currentUser) {
     const listing = await Listing.findById(listingId);
     if (!listing) { const e = new Error('Not found'); e.status = 404; throw e; }
-    ensureOwnerOrAdmin(user, listing.sellerId);
 
-    const base = baseUrlFromReq(req);
-    const toAdd = files.map(f => ({
-        url: `${base}/uploads/${encodeURIComponent(filenameFromPath(f.path))}`,
-        isCover: false
-    }));
+    ensureOwnerOrAdmin(currentUser, listing.sellerId);
 
-    if (!listing.photos || listing.photos.length === 0) {
-        if (toAdd[0]) toAdd[0].isCover = true; // πρώτη φωτο γίνεται cover αν δεν υπήρχε
+    const { mapFile } = getStorage();
+    if (!Array.isArray(files) || !files.length) {
+        const e = new Error('No files'); e.status = 400; throw e;
     }
 
-    listing.photos.push(...toAdd);
-    await listing.save();
+    const newPhotos = files.map(f => {
+        const m = mapFile(f); // provider,url,key πάντα από adapter
+        // extra safety: αν (κακώς) γύρισε absolute path, κάν’ το relative για local
+        if (m.provider === 'local' && !isHttp(m.url)) {
+            m.url = `/uploads/${path.basename(m.url)}`;
+            m.key = path.basename(m.key || m.url);
+        }
+        return { url: m.url, key: m.key, provider: m.provider, isCover: false };
+    });
 
-    const saved = await Listing.findById(listing._id).lean();
-    return normalizeListing(saved);
+    listing.photos.push(...newPhotos);
+    if (listing.photos.length && !listing.photos.some(p => p.isCover)) {
+        listing.photos[0].isCover = true;
+    }
+
+    await listing.save();
+    return serializeListing(listing);
 }
 
-async function removePhoto(user, listingId, photoId) {
+async function removePhoto(listingId, photoId, currentUser) {
     const listing = await Listing.findById(listingId);
     if (!listing) { const e = new Error('Not found'); e.status = 404; throw e; }
-    ensureOwnerOrAdmin(user, listing.sellerId);
+
+    ensureOwnerOrAdmin(currentUser, listing.sellerId);
 
     const photo = listing.photos.id(photoId);
     if (!photo) { const e = new Error('Photo not found'); e.status = 404; throw e; }
 
-    // best-effort: αφαίρεση αρχείου από δίσκο
+    // Διαγραφή από storage (best-effort)
     try {
-        const fileName = decodeURIComponent(new URL(photo.url).pathname.split('/').pop());
-        const fullPath = path.join(__dirname, '..', '..', 'uploads', fileName);
-        fs.existsSync(fullPath) && fs.unlinkSync(fullPath);
-    } catch {}
+        const { cloudinary } = getStorage();
+        if (photo.provider === 'cloudinary' && cloudinary) {
+            await cloudinary.uploader.destroy(photo.key); // public_id
+        } else if (photo.provider === 'local' && photo.key) {
+            const uploadDir = process.env.UPLOAD_DIR || 'uploads';
+            await fs.unlink(path.join(__dirname, '..', '..', uploadDir, photo.key));
+        }
+    } catch {
+        // ignore
+    }
 
     photo.deleteOne();
+    if (!listing.photos.some(p => p.isCover) && listing.photos.length) {
+        listing.photos[0].isCover = true;
+    }
+
     await listing.save();
-    return true;
+    return serializeListing(listing);
 }
 
 async function setCoverPhoto(user, listingId, photoId) {

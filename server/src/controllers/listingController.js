@@ -30,12 +30,12 @@ exports.remove = asyncHandler(async (req, res) => {
 });
 
 exports.addPhotos = asyncHandler(async (req, res) => {
-    const doc = await listings.addPhotos(req.user, req.params.id, req.files, req);
-    res.status(201).json(doc);
+    const listing = await listings.addPhotos(req.params.id, req.files, req.user);
+    res.status(200).json(listing);
 });
 
 exports.removePhoto = asyncHandler(async (req, res) => {
-    await listings.removePhoto(req.user, req.params.id, req.params.photoId);
+    await listings.removePhoto(req.params.id, req.params.photoId, req.user);
     res.json({ ok: true });
 });
 

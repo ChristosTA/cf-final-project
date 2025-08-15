@@ -10,7 +10,12 @@ const listingSchema = new mongoose.Schema({
     condition: { type: String, enum: ['NEW_WITH_TAGS','NEW','EXCELLENT','GOOD','FAIR'], default: 'GOOD' },
     price: { type: Number, required: true }, // euros
     currency: { type: String, default: 'EUR' },
-    photos: [{ url: String, isCover: Boolean }],
+    photos: [{
+        url: String,
+        isCover: { type: Boolean, default: false },
+        provider: { type: String, enum: ['local', 'cloudinary'], default: 'local' },
+        key: String
+    }],
     tags: [String],
     status: { type: String, enum: ['ACTIVE','RESERVED','SOLD','HIDDEN'], default: 'ACTIVE', index: true },
     categories: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Category', index: true }],
