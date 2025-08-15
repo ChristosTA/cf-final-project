@@ -1,7 +1,7 @@
 const router = require('express').Router();
 const { requireAuth } = require('../middlewares/auth');
 const { validateBody, validateQuery } = require('../middlewares/validate');
-const { bindObjectId } = require('../middlewares/bindObjectId');
+const  bindObjectId  = require('../middlewares/bindObjectId');
 const { createOrderSchema, listOrdersQuerySchema, postMessageSchema} = require('../api/validators/orderSchemas');
 const ctrl = require('../controllers/orderController');
 const Listing = require('../models/listing.model');
