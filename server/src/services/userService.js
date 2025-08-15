@@ -20,6 +20,18 @@ function toPublicUser(doc) {
     };
 }
 
+function toPublicUser(u) {
+    const obj = u.toObject ? u.toObject() : u;
+    return {
+        id: obj.publicId || obj._id?.toString(),
+        username: obj.username,
+        name: obj.name || null,
+        roles: obj.roles,
+        serial: obj.serial || undefined,
+        createdAt: obj.createdAt
+    };
+}
+
 function toSafe(u) {
     // Mongoose toJSON transform ήδη κρύβει passwordHash και γυρίζει id=publicId
     return u?.toJSON ? u.toJSON() : u;
@@ -87,4 +99,20 @@ async function removeUser(objectId, currentUser) {
     return true;
 }
 
-module.exports = { listUsers, getUser, updateRoles, removeUser,getMe, updateMe };
+async function getSellerSummary(idOrAny) {
+    const _id = await requireObjectId(User, idOrAny, 'User');
+    const user = await User.findById(_id).select({ username:1, name:1, roles:1, createdAt:1, publicId:1, serial:1 });
+    if (!user) { const e = new Error('Not found'); e.status = 404; throw e; }
+
+    const [activeCount, rating] = await Promise.all([
+        Listing.countDocuments({ sellerId: _id, status: 'ACTIVE' }),
+        getSellerRating(_id)
+    ]);
+
+    return {
+        seller: toPublicUser(user),
+        stats: { activeListings: activeCount, rating }
+    };
+}
+
+module.exports = { listUsers, getUser, updateRoles, removeUser,getMe, updateMe, getSellerSummary };

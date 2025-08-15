@@ -12,6 +12,9 @@ router.use('/categories', require('./categories'));
 router.use('/listings', require('./listings'));
 router.use('/orders', require('./orders'));
 router.use('/favorites', require('./favorites'));
+router.use('/reviews', require('./reviews'));
+router.use('/sellers', require('./sellers'));
+
 
 
 router.get('/me', requireAuth, userCtrl.me);
