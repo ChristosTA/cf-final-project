@@ -1,6 +1,6 @@
 const router = require('express').Router();
 const { requireAuth } = require('../middlewares/auth');
-const { bindObjectId } = require('../middlewares/bindObjectId');
+const  bindObjectId  = require('../middlewares/bindObjectId');
 const Listing = require('../models/listing.Model');
 const ctrl = require('../controllers/favoriteController');
 
