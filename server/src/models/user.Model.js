@@ -2,6 +2,23 @@ const mongoose = require('mongoose');
 const { v4: uuidv4 } = require('uuid');
 const Counter = require('./counter.Model');
 
+const addressSchema = new mongoose.Schema({
+    fullName: { type: String, trim: true },
+    line1:    { type: String, trim: true, required: true },
+    line2:    { type: String, trim: true },
+    city:     { type: String, trim: true, required: true },
+    region:   { type: String, trim: true },         // νομός/περιφέρεια
+    postalCode: { type: String, trim: true, required: true },
+    country:  { type: String, trim: true, default: 'GR' }
+}, { _id: false });
+
+const sellerProfileSchema = new mongoose.Schema({
+    businessName: { type: String, trim: true },     // προαιρετικό για MVP
+    billingAddress: { type: addressSchema, required: false },
+    approved: { type: Boolean, default: false },    // για μελλοντικό manual approval
+    approvedAt: { type: Date }
+}, { _id: false });
+
 
 const userSchema = new mongoose.Schema({
     username: { type: String, required: true, trim: true, index: true, unique: true },
@@ -33,6 +50,12 @@ userSchema.set('toJSON', {
         ret.id = ret.publicId || ret._id?.toString();
         delete ret._id; delete ret.__v; delete ret.passwordHash; delete ret.publicId;
     }
+});
+
+userSchema.add({
+    sellerProfile: { type: sellerProfileSchema, default: {} },
+    // αν θέλεις και γενικές διευθύνσεις:
+    addresses: { type: [addressSchema], default: [] }
 });
 
 userSchema.set('toObject', { virtuals: true });

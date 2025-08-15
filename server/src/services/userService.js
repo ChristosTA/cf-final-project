@@ -115,4 +115,41 @@ async function getSellerSummary(idOrAny) {
     };
 }
 
-module.exports = { listUsers, getUser, updateRoles, removeUser,getMe, updateMe, getSellerSummary };
+async function updateSellerProfile(userId, data) {
+    const update = {
+        ...(data.businessName ? { 'sellerProfile.businessName': data.businessName } : {}),
+        ...(data.billingAddress ? { 'sellerProfile.billingAddress': data.billingAddress } : {}),
+    };
+
+    const user = await User.findByIdAndUpdate(
+        userId,
+        { $set: update },
+        { new: true, projection: { email:1, username:1, roles:1, sellerProfile:1 } }
+    ).lean();
+
+    if (!user) { const e = new Error('User not found'); e.status = 404; throw e; }
+
+    return user;
+}
+
+// μετατροπή σε SELLER (αν έχει billingAddress)
+async function upgradeToSeller(userId) {
+    const user = await User.findById(userId).lean();
+    if (!user) { const e = new Error('User not found'); e.status = 404; throw e; }
+
+    const hasBilling = !!user.sellerProfile?.billingAddress?.line1;
+    if (!hasBilling) {
+        const e = new Error('Billing address is required before upgrading to SELLER');
+        e.status = 400;
+        throw e;
+    }
+
+    if (!user.roles?.includes('SELLER')) {
+        await User.updateOne({ _id: userId }, { $addToSet: { roles: 'SELLER' } });
+    }
+
+    const updated = await User.findById(userId, { email:1, username:1, roles:1, sellerProfile:1 }).lean();
+    return updated;
+}
+
+module.exports = { listUsers, getUser, updateRoles, removeUser,getMe, updateMe, getSellerSummary, upgradeToSeller, updateSellerProfile };
