@@ -2,7 +2,7 @@ const router = require('express').Router();
 const { requireAuth } = require('../middlewares/auth');
 const { validateBody, validateQuery } = require('../middlewares/validate');
 const { bindObjectId } = require('../middlewares/bindObjectId');
-const { createOrderSchema, listOrdersQuerySchema } = require('../api/validators/orderSchemas');
+const { createOrderSchema, listOrdersQuerySchema, postMessageSchema} = require('../api/validators/orderSchemas');
 const ctrl = require('../controllers/orderController');
 const Listing = require('../models/listing.model');
 
@@ -41,5 +41,9 @@ router.patch('/:id/complete',
     bindObjectId('id', Order, 'params', 'Order'),
     ctrl.complete
 );
+
+router.get('/:id/messages', requireAuth, ctrl.getMessages);
+router.post('/:id/messages', requireAuth, validateBody(postMessageSchema), ctrl.postMessage);
+
 
 module.exports = router;

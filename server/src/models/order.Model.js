@@ -13,6 +13,12 @@ const orderSchema = new mongoose.Schema({
     status:    { type: String, enum: ['REQUESTED','ACCEPTED','DECLINED','CANCELLED','COMPLETED'], default: 'REQUESTED', index: true }
 }, { timestamps: true });
 
+const messageSchema = new mongoose.Schema({
+    senderId:  { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    text:      { type: String, required: true, trim: true, maxlength: 2000 },
+    createdAt: { type: Date, default: Date.now }
+}, { _id: true });
+
 orderSchema.pre('save', async function(next){
     try {
         if (!this.publicId) this.publicId = uuidv4();
@@ -29,4 +35,7 @@ orderSchema.set('toJSON', { virtuals: true, transform(doc, ret){
         delete ret._id; delete ret.__v; delete ret.publicId;
     }});
 
+orderSchema.add({
+    messages: [messageSchema]
+});
 module.exports = mongoose.models.Order    || mongoose.model('Order', orderSchema);

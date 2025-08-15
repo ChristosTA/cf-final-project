@@ -11,4 +11,8 @@ const listOrdersQuerySchema = z.object({
     limit: z.coerce.number().int().min(1).max(50).optional()
 });
 
-module.exports = { createOrderSchema, listOrdersQuerySchema };
+const postMessageSchema = z.object({
+    text: z.string().trim().min(1, 'required').max(2000)
+});
+
+module.exports = { createOrderSchema, listOrdersQuerySchema, postMessageSchema  };

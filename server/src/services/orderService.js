@@ -2,9 +2,17 @@ const mongoose = require('mongoose');
 const Order = require('../models/order.Model');
 const Listing = require('../models/listing.model');
 const { isAdmin, isOwner } = require('../utils/permissions');
+const { requireObjectId } = require('../utils/findByAnyId');
 
 
 function isNumeric(s){ return /^\d+$/.test(String(s)); }
+
+function ensureOrderParticipant(order, userId) {
+    const u = String(userId);
+    if (String(order.buyerId) !== u && String(order.sellerId) !== u) {
+        const e = new Error('Forbidden'); e.status = 403; throw e;
+    }
+}
 
 async function findOrderByAnyId(id){
     if (isNumeric(id)) return Order.findOne({ serial: Number(id) });
@@ -107,5 +115,25 @@ async function changeStatus(user, id, action){
     return o.toJSON();
 }
 
+async function getMessages(idOrAny, currentUser) {
+    const _id = await requireObjectId(Order, idOrAny, 'Order');
+    const order = await Order.findById(_id).select({ messages: 1, buyerId: 1, sellerId: 1 });
+    if (!order) { const e = new Error('Not found'); e.status = 404; throw e; }
+    ensureOrderParticipant(order, currentUser.id);
+    // προαιρετικά: limit/skip
+    return order.messages || [];
+}
 
-module.exports = { createOrder, listOrders, getOrder, changeStatus };
+async function addMessage(idOrAny, currentUser, text) {
+    const _id = await requireObjectId(Order, idOrAny, 'Order');
+    const order = await Order.findById(_id).select({ messages: 1, buyerId: 1, sellerId: 1 });
+    if (!order) { const e = new Error('Not found'); e.status = 404; throw e; }
+    ensureOrderParticipant(order, currentUser.id);
+
+    order.messages.push({ senderId: currentUser.id, text, createdAt: new Date() });
+    await order.save();
+    return order.messages[order.messages.length - 1]; // το τελευταίο
+}
+
+
+module.exports = { createOrder, listOrders, getOrder, changeStatus, getMessages, addMessage };

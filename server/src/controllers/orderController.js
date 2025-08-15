@@ -1,5 +1,6 @@
 const asyncHandler = require('../middlewares/asyncHandler');
 const svc = require('../services/orderService');
+const { getMessages, addMessage } = require('../services/orderService');
 
 exports.create = asyncHandler(async (req, res) => {
     const order = await svc.createOrder(req.user.id, req.body);
@@ -15,6 +16,16 @@ exports.list = asyncHandler(async (req, res) => {
 exports.get = asyncHandler(async (req, res) => {
     const o = await svc.getOrder(req.user, req.params.id);
     res.json(o);
+});
+
+exports.getMessages = asyncHandler(async (req, res) => {
+    const msgs = await getMessages(req.params.id, req.user);
+    res.json({ items: msgs });
+});
+
+exports.postMessage = asyncHandler(async (req, res) => {
+    const msg = await addMessage(req.params.id, req.user, req.body.text);
+    res.status(201).json(msg);
 });
 
 exports.accept   = asyncHandler(async (req, res) => { res.json(await svc.changeStatus(req.user, req.params.id, 'accept')); });
