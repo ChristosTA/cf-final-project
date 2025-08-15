@@ -15,3 +15,24 @@ exports.changePassword = asyncHandler(async (req, res) => {
     await auth.changePassword(req.user.id, req.body);
     res.json({ message: 'Password changed' });
 });
+
+// === ΝΕΑ ===
+exports.refresh = asyncHandler(async (req, res) => {
+    const out = await auth.refresh(req.body);
+    res.json(out);
+});
+
+exports.logout = asyncHandler(async (req, res) => {
+    await auth.logout(req.body || {});
+    res.status(204).send();
+});
+
+exports.requestRecovery = asyncHandler(async (req, res) => {
+    const out = await auth.requestRecovery(req.body);
+    res.json(out); // σε DEV θα δεις { token }
+});
+
+exports.confirmRecovery = asyncHandler(async (req, res) => {
+    await auth.confirmRecovery(req.body);
+    res.json({ ok: true });
+});
