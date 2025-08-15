@@ -1,36 +1,32 @@
-const { requireObjectId } = require('../utils/findByAnyId'); // έχεις ήδη το helper
-const Category = require('../models/category.Model'); // προσαρμοσε το όνομα αν διαφέρει
+// src/middlewares/resolveIdsArrayFactory.js
+const { requireObjectId } = require('../utils/findByAnyId');
 
-// field: "categories", location: 'body' | 'query'
-// resolver: ποια οντότητα λύνεις (εδώ πάντα Category, αλλά άστο γενικό)
-module.exports = function resolveIdsArrayFactory(Model, field, location = 'body', entityName = 'Resource') {
+/**
+ * Μετατρέπει ένα πεδίο array (ή single value) από serial/uuid/_id/slug => [Mongo ObjectId]
+ * @param {'params'|'query'|'body'} source - από πού θα διαβάσει (π.χ. 'query')
+ * @param {string} field - το όνομα του πεδίου (π.χ. 'categories')
+ * @param {Model} Model - Mongoose Model που θα λυθεί (π.χ. Category)
+ * @param {string} entityName - φιλικό όνομα οντότητας για μηνύματα (π.χ. 'Category')
+ */
+module.exports = function resolveIdsArrayFactory(source, field, Model, entityName = 'Resource') {
     return async (req, res, next) => {
         try {
-            const src = req[location] || {};
-            const val = src[field];
-            if (!val) return next();
-            const ids = Array.isArray(val) ? val : [val];
+            const container = req[source] || {};
+            const v = container[field];
+            if (!v) return next();
 
-            // ειδική στήριξη για slug: αν μοιάζει με "slug" (όχι numeric/objectId/uuid) προσπάθησε by slug
-            const out = [];
-            for (const x of ids) {
-                // αν είναι slug και Model === Category
-                if (Model.modelName === 'Category' && /^[a-z0-9-]+$/.test(String(x)) && !/^\d+$/.test(String(x))) {
-                    const bySlug = await Model.findOne({ slug: String(x) }).select('_id');
-                    if (!bySlug) {
-                        res.status(404);
-                        throw new Error(`Category not found: ${x}`);
-                    }
-                    out.push(bySlug._id);
-                    continue;
-                }
-                // αλλιώς, serial/uuid/_id
-                const oid = await requireObjectId(Model, x, entityName);
-                out.push(oid);
+            const arr = Array.isArray(v) ? v : [v];
+            const ids = [];
+            for (const x of arr) {
+                const id = await requireObjectId(Model, x, entityName);
+                ids.push(id);
             }
 
-            req[location][field] = out; // αντικατάσταση με ObjectId[]
+            container[field] = ids;      // αντικαθιστά με ObjectIds
+            req[source] = container;     // διασφαλίζουμε ότι μένει πίσω η αλλαγή
             next();
-        } catch (e) { next(e); }
+        } catch (err) {
+            next(err);
+        }
     };
 };
