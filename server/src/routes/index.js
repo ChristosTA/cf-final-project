@@ -14,6 +14,7 @@ router.use('/orders', require('./orders'));
 router.use('/favorites', require('./favorites'));
 router.use('/reviews', require('./reviews'));
 router.use('/sellers', require('./sellers'));
+router.use('/admin', require('./admin.sellers'));
 
 
 
