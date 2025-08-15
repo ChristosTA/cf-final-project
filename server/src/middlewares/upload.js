@@ -1,28 +1,19 @@
 const multer = require('multer');
-const path = require('path');
-const fs = require('fs');
+const getStorage = require('../config/storage');
 
-const uploadDir = path.join(__dirname, '..', '..', 'uploads');
-fs.mkdirSync(uploadDir, { recursive: true });
-
-const storage = multer.diskStorage({
-    destination: (_req, _file, cb) => cb(null, uploadDir),
-    filename: (_req, file, cb) => {
-        const ext = path.extname(file.originalname).toLowerCase();
-        const name = Date.now() + '-' + Math.round(Math.random() * 1e9) + ext;
-        cb(null, name);
-    }
-});
-
-function fileFilter(_req, file, cb) {
-    const ok = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'].includes(file.mimetype);
-    cb(ok ? null : new Error('Only image files are allowed'), ok);
-}
+const { multerStorage } = getStorage();
 
 const upload = multer({
-    storage,
-    fileFilter,
-    limits: { fileSize: 5 * 1024 * 1024, files: 6 } // 5MB, max 6 αρχεία
+    storage: multerStorage,
+    limits: { fileSize: 5 * 1024 * 1024, files: 5 }, // 5MB / έως 5 αρχεία
+    fileFilter: (_req, file, cb) => {
+        if (!file.mimetype || !file.mimetype.startsWith('image/')) {
+            const err = new Error('Only image files are allowed');
+            err.status = 415; // Unsupported Media Type
+            return cb(err);
+        }
+        cb(null, true);
+    },
 });
 
 module.exports = upload;
