@@ -5,7 +5,7 @@ const path = require('path');
 const fs = require('fs');
 const { ensureOwnerOrAdmin, isAdmin } = require('../utils/permissions');
 const getStorage = require('../config/storage');
-const { requireObjectId } = require('../utils/findByAnyId');
+const  requireObjectId = require('../utils/findByAnyId');
 
 
 
@@ -66,6 +66,27 @@ function serializeListing(doc) {
     return obj;
 }
 
+async function resolveCategoryIds({ category, categories }) {
+    const input = [];
+    if (category) input.push(category);
+    if (Array.isArray(categories) && categories.length) input.push(...categories);
+    if (!input.length) return [];
+
+    const uniq = [...new Set(input.map(s => String(s).trim().toLowerCase()))];
+
+    const asObjectIds = uniq.filter(mongoose.isValidObjectId);
+    const asSlugs     = uniq.filter(s => !mongoose.isValidObjectId(s));
+
+    const docs = await Category.find({
+        $or: [
+            { _id: { $in: asObjectIds } },
+            { slug: { $in: asSlugs } }
+        ]
+    }).select('_id');
+
+    return docs.map(d => d._id);
+}
+
 
 
 
@@ -93,59 +114,73 @@ async function expandDescendantsIfNeeded(baseIds, includeChildren) {
 /* ---------- list ---------- */
 async function list(query) {
     const {
-        q, condition, priceMin, priceMax, sort,
-        page = 1, limit = 20,
-        categories, category, categoryMode = 'any', includeChildren = false
+        q, category, categories, categoryMode = 'any', includeChildren,
+        condition, priceMin, priceMax, sort, page = 1, limit = 20,
+        seller, tags, tagMode = 'all',
     } = query;
 
     const filter = {};
+
+    // full-text
     if (q) filter.$text = { $search: q };
+
+    // condition
     if (condition) filter.condition = condition;
+
+    // price
     if (priceMin != null || priceMax != null) {
         filter.price = {
-            ...(priceMin != null ? { $gte: priceMin } : {}),
-            ...(priceMax != null ? { $lte: priceMax } : {}),
+            ...(priceMin != null ? { $gte: Number(priceMin) } : {}),
+            ...(priceMax != null ? { $lte: Number(priceMax) } : {}),
         };
     }
 
-    // αναμένουμε ObjectId( s ) από το resolver
-    let catIds = [];
-    if (category) catIds.push(category);
-    if (categories) catIds.push(...(Array.isArray(categories) ? categories : [categories]));
+    // categories -> resolve σε ObjectIds
+    const catIds = await resolveCategoryIds({ category, categories });
 
     if (catIds.length) {
-        const expanded = await expandDescendantsIfNeeded(catIds, includeChildren);
-        filter.categories = (categoryMode === 'all') ? { $all: expanded } : { $in: expanded };
-    }
-    if (qry.seller) {
-        const sellerObjId = await requireObjectId(require('../models/user.Model'), qry.seller, 'User');
-        filter.sellerId = sellerObjId;
+        // includeChildren: αν έχεις path/children λογική, εδώ επεκτείνεις catIds
+        filter.categories = (categoryMode === 'all')
+            ? { $all: catIds }
+            : { $in: catIds };
     }
 
-    const projection = q ? { score: { $meta: 'textScore' } } : undefined;
+    // seller (δέξου serial/uuid/_id) – αν έχεις requireObjectId util
+    // const sellerId = await requireObjectId(User, seller, 'User').catch(()=>null);
+    // if (sellerId) filter.sellerId = sellerId;
 
-    const cursor = Listing.find(filter, projection)
-        .populate('categories', 'name slug _id');
+    // tags (αν τα χρησιμοποιείς)
+    if (Array.isArray(tags) && tags.length) {
+        const norm = tags.map(t => String(t).trim().toLowerCase()).filter(Boolean);
+        filter.tags = (tagMode === 'all') ? { $all: norm } : { $in: norm };
+    }
 
-    if (q) cursor.sort({ score: { $meta: 'textScore' } });
-    else if (sort === 'price_asc') cursor.sort({ price: 1 });
-    else if (sort === 'price_desc') cursor.sort({ price: -1 });
-    else cursor.sort({ createdAt: -1 });
+    // sort
+    const sortMap = {
+        newest:     { createdAt: -1 },
+        price_asc:  { price: 1 },
+        price_desc: { price: -1 },
+    };
+    const sortStage = sortMap[sort] || sortMap.newest;
 
+    // paginate
     const skip = (Number(page) - 1) * Number(limit);
 
-    const [itemsRaw, total] = await Promise.all([
-        cursor.skip(skip).limit(Number(limit)).lean(),
-        Listing.countDocuments(filter)
+    const cursor = Listing.find(filter)
+        .sort(sortStage)
+        .skip(skip)
+        .limit(Number(limit))
+        .populate({ path: 'categories', select: 'name slug _id' })
+        .lean();
+
+    const [items, total] = await Promise.all([
+        cursor,
+        Listing.countDocuments(filter),
     ]);
 
-    return {
-        items: itemsRaw.map(normalizeListing),
-        page: Number(page),
-        limit: Number(limit),
-        total
-    };
+    return { items, page: Number(page), limit: Number(limit), total };
 }
+
 
 /* ---------- create ---------- */
 async function create(userId, data) {
