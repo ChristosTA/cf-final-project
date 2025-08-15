@@ -2,107 +2,497 @@
   "openapi": "3.0.3",
   "info": {
     "title": "Marketplace API",
-    "version": "1.0.0",
-    "description": "MVP2 – Auth, Users, Categories, Listings (photos upload), Orders (messages), Reviews, Sellers"
+    "version": "2.0.0",
+    "description": "MVP2 – Auth, Users, Categories, Listings (filters), Photos upload, Orders + Messages, Favorites, Reviews."
   },
-  "servers": [
-    { "url": "http://localhost:4000/api" },
-    { "url": "http://localhost:4000" }
+  "servers": [{ "url": "http://localhost:4000" }],
+  "tags": [
+    { "name": "Auth" },
+    { "name": "Users" },
+    { "name": "Categories" },
+    { "name": "Listings" },
+    { "name": "Orders" },
+    { "name": "Favorites" },
+    { "name": "Reviews" }
   ],
+  "paths": {
+    "/api/auth/register": {
+      "post": {
+        "summary": "Register a new user",
+        "tags": ["Auth"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/AuthRegisterBody" },
+              "example": { "email": "panos@gmail.com", "username": "panos", "name": "Panos", "password": "secret123" }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Created", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AuthUserResponse" } } } },
+          "409": { "description": "Email or username exists" },
+          "422": { "description": "Validation error" }
+        }
+      }
+    },
+
+    "/api/auth/login": {
+      "post": {
+        "summary": "Login",
+        "tags": ["Auth"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/LoginBody" },
+              "example": { "email": "panos@gmail.com", "password": "secret123" }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "OK", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/LoginResponse" } } } },
+          "401": { "description": "Invalid credentials" }
+        }
+      }
+    },
+
+    "/api/auth/logout": {
+      "post": {
+        "summary": "Logout (stateless token - client just forgets it)",
+        "tags": ["Auth"],
+        "responses": {
+          "200": { "description": "OK", "content": { "application/json": { "example": { "ok": true } } } }
+        }
+      }
+    },
+
+    "/api/auth/password": {
+      "patch": {
+        "summary": "Change password",
+        "tags": ["Auth"],
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ChangePasswordBody" } } }
+        },
+        "responses": { "200": { "description": "OK" }, "401": { "description": "Invalid current password" } }
+      }
+    },
+
+    "/api/users/me": {
+      "get": {
+        "summary": "Get current user",
+        "tags": ["Users"],
+        "security": [{ "bearerAuth": [] }],
+        "responses": { "200": { "description": "OK", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UserPublic" } } } } }
+      },
+      "put": {
+        "summary": "Update current user (name)",
+        "tags": ["Users"],
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "type": "object", "properties": { "name": { "type": "string" } }, "required": ["name"] } } }
+        },
+        "responses": { "200": { "description": "OK", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UserPublic" } } } } }
+      }
+    },
+
+    "/api/users": {
+      "get": {
+        "summary": "List users (ADMIN)",
+        "tags": ["Users"],
+        "security": [{ "bearerAuth": [] }],
+        "responses": { "200": { "description": "OK" } }
+      }
+    },
+
+    "/api/users/{id}/roles": {
+      "patch": {
+        "summary": "Update user roles (ADMIN)",
+        "tags": ["Users"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" }, "description": "serial | uuid | _id" }],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UpdateRolesBody" }, "example": { "roles": ["USER", "SELLER"] } } }
+        },
+        "responses": { "200": { "description": "OK" }, "403": { "description": "Forbidden" } }
+      }
+    },
+
+    "/api/users/{id}": {
+      "delete": {
+        "summary": "Delete user (ADMIN)",
+        "tags": ["Users"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": { "200": { "description": "OK" }, "404": { "description": "Not found" } }
+      }
+    },
+
+    "/api/categories": {
+      "get": {
+        "summary": "List categories",
+        "tags": ["Categories"],
+        "parameters": [
+          { "name": "parent", "in": "query", "schema": { "type": "string", "enum": ["root"] }, "required": false },
+          { "name": "q", "in": "query", "schema": { "type": "string" }, "required": false }
+        ],
+        "responses": { "200": { "description": "OK" } }
+      },
+      "post": {
+        "summary": "Create category (ADMIN)",
+        "tags": ["Categories"],
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CategoryCreate" }, "example": { "name": "Hoodie" } } }
+        },
+        "responses": { "201": { "description": "Created" } }
+      }
+    },
+
+    "/api/categories/{slugOrId}": {
+      "get": {
+        "summary": "Get category by slug or id",
+        "tags": ["Categories"],
+        "parameters": [{ "name": "slugOrId", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": { "200": { "description": "OK" }, "404": { "description": "Not found" } }
+      }
+    },
+
+    "/api/categories/{id}": {
+      "patch": {
+        "summary": "Update category (ADMIN)",
+        "tags": ["Categories"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CategoryUpdate" } } } },
+        "responses": { "200": { "description": "OK" } }
+      },
+      "delete": {
+        "summary": "Delete category (ADMIN)",
+        "tags": ["Categories"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": { "200": { "description": "OK" }, "400": { "description": "Has children" } }
+      }
+    },
+
+    "/api/listings": {
+      "get": {
+        "summary": "List listings (full filters)",
+        "tags": ["Listings"],
+        "parameters": [
+          { "name": "q", "in": "query", "schema": { "type": "string" } },
+          { "name": "categories", "in": "query", "description": "array or comma string (A,B)", "schema": { "type": "array", "items": { "type": "string" } }, "style": "form", "explode": true },
+          { "name": "categoryMode", "in": "query", "schema": { "type": "string", "enum": ["any", "all"] }, "required": false },
+          { "name": "includeChildren", "in": "query", "schema": { "type": "boolean" }, "required": false },
+          { "name": "condition", "in": "query", "schema": { "type": "string", "enum": ["NEW_WITH_TAGS","NEW","EXCELLENT","GOOD","FAIR"] } },
+          { "name": "priceMin", "in": "query", "schema": { "type": "number", "minimum": 0 } },
+          { "name": "priceMax", "in": "query", "schema": { "type": "number", "minimum": 0 } },
+          { "name": "sort", "in": "query", "schema": { "type": "string", "enum": ["newest","price_asc","price_desc"] } },
+          { "name": "page", "in": "query", "schema": { "type": "integer", "minimum": 1, "default": 1 } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "minimum": 1, "maximum": 50, "default": 20 } },
+          { "name": "seller", "in": "query", "schema": { "type": "string" }, "description": "serial | uuid | _id (seller)" }
+        ],
+        "responses": { "200": { "description": "OK" } }
+      },
+      "post": {
+        "summary": "Create listing (SELLER/ADMIN)",
+        "tags": ["Listings"],
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ListingCreate" } } } },
+        "responses": { "201": { "description": "Created" }, "403": { "description": "Forbidden" } }
+      }
+    },
+
+    "/api/listings/{id}": {
+      "get": {
+        "summary": "Get listing by id (serial|uuid|_id)",
+        "tags": ["Listings"],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": { "200": { "description": "OK" }, "404": { "description": "Not found" } }
+      },
+      "put": {
+        "summary": "Update listing",
+        "tags": ["Listings"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ListingUpdate" } } } },
+        "responses": { "200": { "description": "OK" } }
+      },
+      "delete": {
+        "summary": "Delete listing",
+        "tags": ["Listings"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": { "200": { "description": "OK" } }
+      }
+    },
+
+    "/api/listings/{id}/photos": {
+      "post": {
+        "summary": "Upload photos to listing (multipart)",
+        "tags": ["Listings"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "files": { "type": "array", "items": { "type": "string", "format": "binary" } }
+                },
+                "required": ["files"]
+              }
+            }
+          }
+        },
+        "responses": { "201": { "description": "Created" } }
+      }
+    },
+
+    "/api/listings/{id}/photos/{photoId}": {
+      "delete": {
+        "summary": "Delete photo from listing",
+        "tags": ["Listings"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "photoId", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": { "200": { "description": "OK" }, "404": { "description": "Not found" } }
+      }
+    },
+
+    "/api/orders": {
+      "get": {
+        "summary": "List my orders (buyer/seller)",
+        "tags": ["Orders"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "role", "in": "query", "schema": { "type": "string", "enum": ["buyer","seller"] } },
+          { "name": "status", "in": "query", "schema": { "type": "string", "enum": ["PENDING","ACCEPTED","DECLINED","CANCELLED","COMPLETED"] } },
+          { "name": "page", "in": "query", "schema": { "type": "integer", "minimum": 1 } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "minimum": 1, "maximum": 50 } }
+        ],
+        "responses": { "200": { "description": "OK" } }
+      },
+      "post": {
+        "summary": "Create order for listing",
+        "tags": ["Orders"],
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/OrderCreate" }, "example": { "listingId": "3" } } } },
+        "responses": { "201": { "description": "Created" }, "409": { "description": "Listing not available" } }
+      }
+    },
+
+    "/api/orders/{id}": {
+      "get": {
+        "summary": "Get order by id (serial|uuid|_id)",
+        "tags": ["Orders"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": { "200": { "description": "OK" }, "404": { "description": "Not found" } }
+      }
+    },
+
+    "/api/orders/{id}/accept": {
+      "patch": {
+        "summary": "Seller accepts order",
+        "tags": ["Orders"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": { "200": { "description": "OK" }, "403": { "description": "Forbidden" } }
+      }
+    },
+    "/api/orders/{id}/decline": {
+      "patch": {
+        "summary": "Seller declines order",
+        "tags": ["Orders"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": { "200": { "description": "OK" } }
+      }
+    },
+    "/api/orders/{id}/cancel": {
+      "patch": {
+        "summary": "Buyer cancels order",
+        "tags": ["Orders"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": { "200": { "description": "OK" } }
+      }
+    },
+    "/api/orders/{id}/complete": {
+      "patch": {
+        "summary": "Mark order as completed",
+        "tags": ["Orders"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": { "200": { "description": "OK" } }
+      }
+    },
+
+    "/api/orders/{id}/messages": {
+      "get": {
+        "summary": "List messages for order (buyer/seller only)",
+        "tags": ["Orders"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 50 } }
+        ],
+        "responses": { "200": { "description": "OK" }, "403": { "description": "Forbidden" } }
+      },
+      "post": {
+        "summary": "Post message to order (buyer/seller only)",
+        "tags": ["Orders"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MessageCreate" }, "example": { "text": "Καλησπέρα! Πότε στέλνεις;" } } } },
+        "responses": { "201": { "description": "Created" } }
+      }
+    },
+
+    "/api/favorites": {
+      "get": {
+        "summary": "List my favorites",
+        "tags": ["Favorites"],
+        "security": [{ "bearerAuth": [] }],
+        "responses": { "200": { "description": "OK" } }
+      }
+    },
+
+    "/api/favorites/{listingId}": {
+      "post": {
+        "summary": "Add to favorites",
+        "tags": ["Favorites"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "listingId", "in": "path", "required": true, "schema": { "type": "string" }, "description": "serial | uuid | _id" }],
+        "responses": { "201": { "description": "Created" } }
+      },
+      "delete": {
+        "summary": "Remove from favorites",
+        "tags": ["Favorites"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "listingId", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": { "200": { "description": "OK" } }
+      }
+    },
+
+    "/api/reviews": {
+      "post": {
+        "summary": "Create review (only after COMPLETED order)",
+        "tags": ["Reviews"],
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ReviewCreate" }, "example": { "orderId": "7", "rating": 5, "comment": "Όλα τέλεια!" } } } },
+        "responses": { "201": { "description": "Created" }, "400": { "description": "Not eligible" } }
+      },
+      "get": {
+        "summary": "List reviews for seller",
+        "tags": ["Reviews"],
+        "parameters": [{ "name": "seller", "in": "query", "required": true, "schema": { "type": "string" }, "description": "serial | uuid | _id (seller)" }],
+        "responses": { "200": { "description": "OK" } }
+      }
+    }
+  },
+
   "components": {
     "securitySchemes": {
       "bearerAuth": { "type": "http", "scheme": "bearer", "bearerFormat": "JWT" }
     },
     "schemas": {
-      "ApiMessage": {
-        "type": "object",
-        "properties": { "message": { "type": "string" } }
-      },
       "UserPublic": {
         "type": "object",
         "properties": {
-          "id": { "type": "string" },
+          "id": { "type": "string", "description": "publicId (uuid)" },
+          "email": { "type": "string" },
           "username": { "type": "string" },
-          "name": { "type": "string", "nullable": true },
+          "name": { "type": "string" },
           "roles": { "type": "array", "items": { "type": "string" } },
-          "serial": { "type": "integer", "nullable": true },
-          "createdAt": { "type": "string", "format": "date-time" }
+          "serial": { "type": "integer" }
         }
       },
-      "Category": {
+
+      "AuthRegisterBody": {
+        "type": "object",
+        "required": ["email","username","password"],
+        "properties": {
+          "email": { "type": "string", "format": "email" },
+          "username": { "type": "string", "minLength": 3 },
+          "name": { "type": "string" },
+          "password": { "type": "string", "minLength": 6 }
+        }
+      },
+      "AuthUserResponse": {
+        "type": "object",
+        "properties": { "user": { "$ref": "#/components/schemas/UserPublic" } }
+      },
+
+      "LoginBody": {
+        "type": "object",
+        "required": ["email","password"],
+        "properties": {
+          "email": { "type": "string", "format": "email" },
+          "password": { "type": "string", "minLength": 6 }
+        }
+      },
+      "LoginResponse": {
         "type": "object",
         "properties": {
-          "id": { "type": "string" },
+          "user": { "$ref": "#/components/schemas/UserPublic" },
+          "accessToken": { "type": "string" }
+        }
+      },
+      "ChangePasswordBody": {
+        "type": "object",
+        "required": ["currentPassword","newPassword"],
+        "properties": {
+          "currentPassword": { "type": "string", "minLength": 6 },
+          "newPassword": { "type": "string", "minLength": 6 }
+        }
+      },
+      "UpdateRolesBody": {
+        "type": "object",
+        "required": ["roles"],
+        "properties": { "roles": { "type": "array", "items": { "type": "string", "enum": ["USER","SELLER","ADMIN"] } } }
+      },
+
+      "CategoryCreate": {
+        "type": "object",
+        "required": ["name"],
+        "properties": {
+          "name": { "type": "string", "minLength": 2 },
+          "slug": { "type": "string" },
+          "parentId": { "type": "string", "nullable": true }
+        }
+      },
+      "CategoryUpdate": {
+        "type": "object",
+        "properties": {
           "name": { "type": "string" },
           "slug": { "type": "string" },
-          "parentId": { "type": "string", "nullable": true },
-          "path": { "type": "array", "items": { "type": "string" } },
-          "createdAt": { "type": "string", "format": "date-time" },
-          "updatedAt": { "type": "string", "format": "date-time" }
+          "parentId": { "type": "string", "nullable": true }
         }
       },
-      "ListingPhotoVariant": {
-        "type": "object",
-        "properties": {
-          "name": { "type": "string", "example": "thumb" },
-          "url": { "type": "string", "format": "uri" }
-        }
-      },
-      "ListingPhoto": {
-        "type": "object",
-        "properties": {
-          "_id": { "type": "string" },
-          "url": { "type": "string" },
-          "isCover": { "type": "boolean" },
-          "provider": { "type": "string", "enum": ["local","cloudinary"] },
-          "key": { "type": "string" },
-          "variants": { "type": "array", "items": { "$ref": "#/components/schemas/ListingPhotoVariant" } }
-        }
-      },
-      "Listing": {
-        "type": "object",
-        "properties": {
-          "id": { "type": "string" },
-          "serial": { "type": "integer" },
-          "publicId": { "type": "string" },
-          "sellerId": { "type": "string" },
-          "title": { "type": "string" },
-          "description": { "type": "string" },
-          "condition": { "type": "string", "enum": ["NEW_WITH_TAGS","NEW","EXCELLENT","GOOD","FAIR"] },
-          "price": { "type": "number" },
-          "currency": { "type": "string" },
-          "photos": { "type": "array", "items": { "$ref": "#/components/schemas/ListingPhoto" } },
-          "tags": { "type": "array", "items": { "type": "string" } },
-          "status": { "type": "string", "enum": ["ACTIVE","RESERVED","SOLD","HIDDEN"] },
-          "categories": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "properties": {
-                "id": { "type": "string" },
-                "name": { "type": "string" },
-                "slug": { "type": "string" }
-              }
-            }
-          },
-          "metrics": {
-            "type": "object",
-            "properties": { "views": { "type": "integer" } }
-          },
-          "createdAt": { "type": "string", "format": "date-time" }
-        }
-      },
+
       "ListingCreate": {
         "type": "object",
-        "required": ["title", "price"],
+        "required": ["title","price"],
         "properties": {
-          "title": { "type": "string", "example": "Nike Hoodie" },
-          "description": { "type": "string", "example": "Ζεστό, λίγο φορεμένο" },
-          "condition": { "type": "string", "enum": ["NEW_WITH_TAGS","NEW","EXCELLENT","GOOD","FAIR"], "example": "GOOD" },
-          "price": { "type": "number", "example": 1090 },
-          "currency": { "type": "string", "example": "EUR" },
-          "tags": { "type": "array", "items": { "type": "string" }, "example": ["hoodie","adidas"] },
-          "categories": { "type": "array", "items": { "type": "string" }, "example": ["hoodie"] }
+          "title": { "type": "string", "minLength": 3 },
+          "description": { "type": "string" },
+          "condition": { "type": "string", "enum": ["NEW_WITH_TAGS","NEW","EXCELLENT","GOOD","FAIR"] },
+          "price": { "type": "number", "minimum": 0 },
+          "currency": { "type": "string", "default": "EUR" },
+          "tags": { "type": "array", "items": { "type": "string" } },
+          "categories": { "type": "array", "items": { "type": "string" }, "description": "δεχόμαστε slug ή _id ή serial (server τα λύνει)" }
         }
       },
       "ListingUpdate": {
@@ -114,515 +504,32 @@
           "price": { "type": "number" },
           "currency": { "type": "string" },
           "tags": { "type": "array", "items": { "type": "string" } },
-          "status": { "type": "string", "enum": ["ACTIVE","RESERVED","SOLD","HIDDEN"] },
           "categories": { "type": "array", "items": { "type": "string" } }
         }
       },
-      "OrderMessage": {
-        "type": "object",
-        "properties": {
-          "_id": { "type": "string" },
-          "senderId": { "type": "string" },
-          "text": { "type": "string" },
-          "createdAt": { "type": "string", "format": "date-time" }
-        }
-      },
-      "Order": {
-        "type": "object",
-        "properties": {
-          "id": { "type": "string" },
-          "serial": { "type": "integer" },
-          "listingId": { "type": "string" },
-          "buyerId": { "type": "string" },
-          "sellerId": { "type": "string" },
-          "status": { "type": "string", "enum": ["PENDING","ACCEPTED","DECLINED","CANCELLED","COMPLETED"] },
-          "messages": { "type": "array", "items": { "$ref": "#/components/schemas/OrderMessage" } },
-          "createdAt": { "type": "string", "format": "date-time" }
-        }
-      },
+
       "OrderCreate": {
         "type": "object",
         "required": ["listingId"],
         "properties": {
-          "listingId": { "type": "string", "description": "serial | uuid | _id" },
-          "note": { "type": "string" }
-        },
-        "example": { "listingId": "3", "note": "Θα το παραλάβω Δευτέρα" }
+          "listingId": { "type": "string", "description": "serial | uuid | _id" }
+        }
       },
-      "PostOrderMessage": {
+
+      "MessageCreate": {
         "type": "object",
         "required": ["text"],
-        "properties": { "text": { "type": "string" } },
-        "example": { "text": "Γεια, πότε το στέλνεις;" }
+        "properties": { "text": { "type": "string", "minLength": 1, "maxLength": 1000 } }
       },
-      "Review": {
-        "type": "object",
-        "properties": {
-          "id": { "type": "string" },
-          "orderId": { "type": "string" },
-          "sellerId": { "type": "string" },
-          "buyerId": { "type": "string" },
-          "rating": { "type": "integer", "minimum": 1, "maximum": 5 },
-          "comment": { "type": "string" },
-          "createdAt": { "type": "string", "format": "date-time" }
-        }
-      },
+
       "ReviewCreate": {
         "type": "object",
-        "required": ["orderId", "rating", "comment"],
+        "required": ["orderId","rating"],
         "properties": {
-          "orderId": { "type": "string" },
+          "orderId": { "type": "string", "description": "serial | uuid | _id (order)" },
           "rating": { "type": "integer", "minimum": 1, "maximum": 5 },
           "comment": { "type": "string" }
-        },
-        "example": { "orderId": "12", "rating": 5, "comment": "Άψογος!" }
-      },
-      "SellerSummary": {
-        "type": "object",
-        "properties": {
-          "seller": { "$ref": "#/components/schemas/UserPublic" },
-          "stats": {
-            "type": "object",
-            "properties": {
-              "activeListings": { "type": "integer" },
-              "rating": {
-                "type": "object",
-                "properties": {
-                  "avg": { "type": "number" },
-                  "count": { "type": "integer" }
-                }
-              }
-            }
-          }
         }
-      }
-    }
-  },
-  "security": [],
-  "paths": {
-    "/health": {
-      "get": {
-        "tags": ["Info"],
-        "summary": "Health check",
-        "responses": { "200": { "description": "OK" } }
-      }
-    },
-    "/auth/register": {
-      "post": {
-        "tags": ["Auth"],
-        "summary": "Register",
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "required": ["email","username","password"],
-                "properties": {
-                  "email": { "type": "string", "format": "email" },
-                  "username": { "type": "string" },
-                  "name": { "type": "string" },
-                  "password": { "type": "string", "format": "password" }
-                }
-              },
-              "example": { "email": "new@user.com", "username": "newuser", "password": "secret123" }
-            }
-          }
-        },
-        "responses": { "201": { "description": "Created" }, "409": { "description": "Conflict" } }
-      }
-    },
-    "/auth/login": {
-      "post": {
-        "tags": ["Auth"],
-        "summary": "Login",
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "required": ["email","password"],
-                "properties": {
-                  "email": { "type": "string", "format": "email" },
-                  "password": { "type": "string", "format": "password" }
-                }
-              },
-              "example": { "email": "panos@gmail.com", "password": "secret123" }
-            }
-          }
-        },
-        "responses": { "200": { "description": "OK" }, "401": { "description": "Unauthorized" } }
-      }
-    },
-    "/auth/logout": {
-      "post": {
-        "tags": ["Auth"],
-        "summary": "Logout (client-side token drop)",
-        "security": [{ "bearerAuth": [] }],
-        "responses": { "200": { "description": "OK" } }
-      }
-    },
-    "/auth/password": {
-      "patch": {
-        "tags": ["Auth"],
-        "summary": "Change password",
-        "security": [{ "bearerAuth": [] }],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "required": ["currentPassword","newPassword"],
-                "properties": {
-                  "currentPassword": { "type": "string" },
-                  "newPassword": { "type": "string" }
-                }
-              },
-              "example": { "currentPassword": "secret123", "newPassword": "newsecret456" }
-            }
-          }
-        },
-        "responses": { "200": { "description": "OK" }, "401": { "description": "Unauthorized" } }
-      }
-    },
-    "/users": {
-      "get": {
-        "tags": ["Users (admin)"],
-        "summary": "List users",
-        "security": [{ "bearerAuth": [] }],
-        "responses": { "200": { "description": "OK" }, "403": { "description": "Forbidden" } }
-      }
-    },
-    "/users/me": {
-      "get": {
-        "tags": ["Users"],
-        "summary": "Who am I",
-        "security": [{ "bearerAuth": [] }],
-        "responses": { "200": { "description": "OK" }, "401": { "description": "Unauthorized" } }
-      },
-      "put": {
-        "tags": ["Users"],
-        "summary": "Update my profile (name)",
-        "security": [{ "bearerAuth": [] }],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": { "type": "object", "properties": { "name": { "type": "string" } }, "required": ["name"] },
-              "example": { "name": "Panos" }
-            }
-          }
-        },
-        "responses": { "200": { "description": "OK" } }
-      }
-    },
-    "/users/{id}": {
-      "delete": {
-        "tags": ["Users (admin)"],
-        "summary": "Delete user",
-        "security": [{ "bearerAuth": [] }],
-        "parameters": [{ "name":"id","in":"path","required":true,"schema":{"type":"string"},"description":"serial | uuid | _id"}],
-        "responses": { "200": { "description": "OK" }, "403": { "description": "Forbidden" } }
-      }
-    },
-    "/users/{id}/roles": {
-      "put": {
-        "tags": ["Users (admin)"],
-        "summary": "Update roles",
-        "security": [{ "bearerAuth": [] }],
-        "parameters": [{ "name":"id","in":"path","required":true,"schema":{"type":"string"},"description":"serial | uuid | _id"}],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": { "schema": { "type": "object", "properties": { "roles": { "type": "array", "items": { "type":"string", "enum":["USER","SELLER","ADMIN"] } } }, "required": ["roles"] },
-              "example": { "roles": ["USER","SELLER"] } }
-          }
-        },
-        "responses": { "200": { "description": "OK" }, "403": { "description": "Forbidden" } }
-      }
-    },
-    "/categories": {
-      "get": {
-        "tags": ["Categories"],
-        "summary": "List categories",
-        "parameters": [
-          { "name":"parent","in":"query","schema":{"type":"string"},"description":"parent id | 'root'"},
-          { "name":"q","in":"query","schema":{"type":"string"} }
-        ],
-        "responses": { "200": { "description": "OK" } }
-      },
-      "post": {
-        "tags": ["Categories (admin)"],
-        "summary": "Create category",
-        "security": [{ "bearerAuth": [] }],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": { "schema": { "$ref": "#/components/schemas/Category" }, "example": { "name": "Hoodie" } }
-          }
-        },
-        "responses": { "201": { "description": "Created" }, "403": { "description": "Forbidden" } }
-      }
-    },
-    "/categories/{slugOrId}": {
-      "get": {
-        "tags": ["Categories"],
-        "summary": "Get category by slug or id",
-        "parameters": [{ "name":"slugOrId","in":"path","required":true,"schema":{"type":"string"} }],
-        "responses": { "200": { "description": "OK" }, "404": { "description": "Not found" } }
-      }
-    },
-    "/categories/{id}": {
-      "patch": {
-        "tags": ["Categories (admin)"],
-        "summary": "Update category",
-        "security": [{ "bearerAuth": [] }],
-        "parameters": [{ "name":"id","in":"path","required":true,"schema":{"type":"string"} }],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": { "schema": { "type": "object", "properties": { "name": { "type":"string" }, "slug": { "type":"string" }, "parentId": { "type":"string","nullable":true } } } }
-          }
-        },
-        "responses": { "200": { "description": "OK" } }
-      },
-      "delete": {
-        "tags": ["Categories (admin)"],
-        "summary": "Delete category",
-        "security": [{ "bearerAuth": [] }],
-        "parameters": [{ "name":"id","in":"path","required":true,"schema":{"type":"string"} }],
-        "responses": { "200": { "description": "OK" }, "400": { "description": "Has children" } }
-      }
-    },
-    "/listings": {
-      "get": {
-        "tags": ["Listings"],
-        "summary": "Search/list listings",
-        "parameters": [
-          { "name":"q","in":"query","schema":{"type":"string"} },
-          { "name":"category","in":"query","schema":{"type":"string"},"description":"slug | id | serial" },
-          { "name":"seller","in":"query","schema":{"type":"string"},"description":"serial | uuid | _id (seller)" },
-          { "name":"condition","in":"query","schema":{"type":"string"} },
-          { "name":"priceMin","in":"query","schema":{"type":"number"} },
-          { "name":"priceMax","in":"query","schema":{"type":"number"} },
-          { "name":"sort","in":"query","schema":{"type":"string","enum":["newest","price_asc","price_desc"]} },
-          { "name":"page","in":"query","schema":{"type":"integer"} },
-          { "name":"limit","in":"query","schema":{"type":"integer"} }
-        ],
-        "responses": { "200": { "description": "OK" } }
-      },
-      "post": {
-        "tags": ["Listings"],
-        "summary": "Create listing (SELLER/ADMIN)",
-        "security": [{ "bearerAuth": [] }],
-        "requestBody": {
-          "required": true,
-          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ListingCreate" } } }
-        },
-        "responses": { "201": { "description": "Created" }, "403": { "description": "Forbidden" } }
-      }
-    },
-    "/listings/{id}": {
-      "get": {
-        "tags": ["Listings"],
-        "summary": "Get listing by id (serial|uuid|_id)",
-        "parameters": [{ "name":"id","in":"path","required":true,"schema":{"type":"string"} }],
-        "responses": { "200": { "description": "OK" }, "404": { "description": "Not found" } }
-      },
-      "put": {
-        "tags": ["Listings"],
-        "summary": "Update listing",
-        "security": [{ "bearerAuth": [] }],
-        "parameters": [{ "name":"id","in":"path","required":true,"schema":{"type":"string"} }],
-        "requestBody": {
-          "required": true,
-          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ListingUpdate" } } }
-        },
-        "responses": { "200": { "description": "OK" }, "403": { "description": "Forbidden" } }
-      },
-      "delete": {
-        "tags": ["Listings"],
-        "summary": "Delete listing (cleanup photos too)",
-        "security": [{ "bearerAuth": [] }],
-        "parameters": [{ "name":"id","in":"path","required":true,"schema":{"type":"string"} }],
-        "responses": { "200": { "description": "OK" }, "403": { "description": "Forbidden" } }
-      }
-    },
-    "/listings/{id}/photos": {
-      "post": {
-        "tags": ["Listings"],
-        "summary": "Upload photos (multipart, field: photos[])",
-        "security": [{ "bearerAuth": [] }],
-        "parameters": [{ "name":"id","in":"path","required":true,"schema":{"type":"string"},"description":"serial | uuid | _id" }],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "multipart/form-data": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "photos": {
-                    "type": "array",
-                    "items": { "type": "string", "format": "binary" }
-                  }
-                },
-                "required": ["photos"]
-              }
-            }
-          }
-        },
-        "responses": { "200": { "description": "OK" }, "415": { "description": "Only images allowed" } }
-      }
-    },
-    "/listings/{id}/photos/{photoId}": {
-      "delete": {
-        "tags": ["Listings"],
-        "summary": "Remove one photo",
-        "security": [{ "bearerAuth": [] }],
-        "parameters": [
-          { "name":"id","in":"path","required":true,"schema":{"type":"string"} },
-          { "name":"photoId","in":"path","required":true,"schema":{"type":"string"} }
-        ],
-        "responses": { "200": { "description": "OK" }, "404": { "description": "Not found" } }
-      }
-    },
-    "/listings/{id}/photos/{photoId}/cover": {
-      "patch": {
-        "tags": ["Listings"],
-        "summary": "Set cover photo",
-        "security": [{ "bearerAuth": [] }],
-        "parameters": [
-          { "name":"id","in":"path","required":true,"schema":{"type":"string"} },
-          { "name":"photoId","in":"path","required":true,"schema":{"type":"string"} }
-        ],
-        "responses": { "200": { "description": "OK" }, "404": { "description": "Not found" } }
-      }
-    },
-    "/listings/{id}/photos/reorder": {
-      "put": {
-        "tags": ["Listings"],
-        "summary": "Reorder photos",
-        "security": [{ "bearerAuth": [] }],
-        "parameters": [{ "name":"id","in":"path","required":true,"schema":{"type":"string"} }],
-        "requestBody": {
-          "required": true,
-          "content": { "application/json": {
-            "schema": {
-              "type": "object",
-              "properties": { "photoIds": { "type": "array", "items": { "type": "string" } } },
-              "required": ["photoIds"]
-            },
-            "example": { "photoIds": ["<photoId2>","<photoId1>","<photoId3>"] }
-          }}
-        },
-        "responses": { "200": { "description": "OK" }, "400": { "description": "Bad request" } }
-      }
-    },
-    "/orders": {
-      "post": {
-        "tags": ["Orders"],
-        "summary": "Create order for listing",
-        "security": [{ "bearerAuth": [] }],
-        "requestBody": {
-          "required": true,
-          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/OrderCreate" } } }
-        },
-        "responses": { "201": { "description": "Created" }, "409": { "description": "Listing not available" } }
-      }
-    },
-    "/orders/{id}": {
-      "get": {
-        "tags": ["Orders"],
-        "summary": "Get order (buyer/seller only)",
-        "security": [{ "bearerAuth": [] }],
-        "parameters": [{ "name":"id","in":"path","required":true,"schema":{"type":"string"} }],
-        "responses": { "200": { "description": "OK" }, "403": { "description": "Forbidden" }, "404": { "description": "Not found" } }
-      }
-    },
-    "/orders/{id}/accept": {
-      "patch": {
-        "tags": ["Orders"],
-        "summary": "Seller accepts order",
-        "security": [{ "bearerAuth": [] }],
-        "parameters": [{ "name":"id","in":"path","required":true,"schema":{"type":"string"} }],
-        "responses": { "200": { "description": "OK" }, "403": { "description": "Forbidden" } }
-      }
-    },
-    "/orders/{id}/decline": {
-      "patch": {
-        "tags": ["Orders"],
-        "summary": "Seller declines order",
-        "security": [{ "bearerAuth": [] }],
-        "parameters": [{ "name":"id","in":"path","required":true,"schema":{"type":"string"} }],
-        "responses": { "200": { "description": "OK" } }
-      }
-    },
-    "/orders/{id}/cancel": {
-      "patch": {
-        "tags": ["Orders"],
-        "summary": "Buyer cancels order",
-        "security": [{ "bearerAuth": [] }],
-        "parameters": [{ "name":"id","in":"path","required":true,"schema":{"type":"string"} }],
-        "responses": { "200": { "description": "OK" } }
-      }
-    },
-    "/orders/{id}/complete": {
-      "patch": {
-        "tags": ["Orders"],
-        "summary": "Complete order (seller)",
-        "security": [{ "bearerAuth": [] }],
-        "parameters": [{ "name":"id","in":"path","required":true,"schema":{"type":"string"} }],
-        "responses": { "200": { "description": "OK" } }
-      }
-    },
-    "/orders/{id}/messages": {
-      "get": {
-        "tags": ["Orders"],
-        "summary": "List messages (buyer/seller only)",
-        "security": [{ "bearerAuth": [] }],
-        "parameters": [{ "name":"id","in":"path","required":true,"schema":{"type":"string"} }],
-        "responses": { "200": { "description": "OK" }, "403": { "description": "Forbidden" } }
-      },
-      "post": {
-        "tags": ["Orders"],
-        "summary": "Post message to order (buyer/seller only)",
-        "security": [{ "bearerAuth": [] }],
-        "parameters": [{ "name":"id","in":"path","required":true,"schema":{"type":"string"} }],
-        "requestBody": {
-          "required": true,
-          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PostOrderMessage" } } }
-        },
-        "responses": { "201": { "description": "Created" }, "403": { "description": "Forbidden" } }
-      }
-    },
-    "/reviews": {
-      "post": {
-        "tags": ["Reviews"],
-        "summary": "Create review (buyer, only COMPLETED order)",
-        "security": [{ "bearerAuth": [] }],
-        "requestBody": {
-          "required": true,
-          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ReviewCreate" } } }
-        },
-        "responses": { "201": { "description": "Created" }, "400": { "description": "Only COMPLETED orders" }, "403": { "description": "Forbidden" } }
-      }
-    },
-    "/reviews/seller/{id}": {
-      "get": {
-        "tags": ["Reviews"],
-        "summary": "List reviews of seller",
-        "parameters": [{ "name":"id","in":"path","required":true,"schema":{"type":"string"} }],
-        "responses": { "200": { "description": "OK" } }
-      }
-    },
-    "/sellers/{id}": {
-      "get": {
-        "tags": ["Sellers"],
-        "summary": "Public seller summary",
-        "parameters": [{ "name":"id","in":"path","required":true,"schema":{"type":"string"} }],
-        "responses": { "200": { "description": "OK" }, "404": { "description": "Not found" } }
       }
     }
   }

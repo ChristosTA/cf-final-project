@@ -7,6 +7,7 @@ const ctrl = require('../controllers/userController');
 
 const resolveSerialFactory = require('../middlewares/resolveSerialFactory');
 const User = require('../models/user.Model');
+const bindObjectId = require("../middlewares/bindObjectId");
 const resolveUserSerial = resolveSerialFactory(User);
 
 // Admin-only λίστα
@@ -16,10 +17,11 @@ router.get('/', requireAuth, requireRole('ADMIN'), ctrl.list);
 router.get('/:id', requireAuth, resolveUserSerial, ctrl.get);
 
 // Update roles (ADMIN)
-router.put('/:id/roles',
+router.patch(
+    '/:id/roles',
     requireAuth,
     requireRole('ADMIN'),
-    resolveUserSerial,
+    bindObjectId('id', User, 'params', 'User'),  // δέχεται serial | uuid | _id
     validateBody(updateUserRolesSchema),
     ctrl.updateRoles
 );
