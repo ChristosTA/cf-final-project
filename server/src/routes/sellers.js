@@ -1,24 +1,18 @@
 const router = require('express').Router();
-const { requireAuth } = require('../middlewares/auth');
-const { validateBody } = require('../middlewares/validate');
-const { updateSellerProfileSchema } = require('../api/validators/userSchemas');
-const ctrl = require('../controllers/sellerController');
+const { requireAuth, requireRole } = require('../middlewares/auth');
+const { validateBody } = require('../middlewares/validate'); // ✅ σωστό import
+const sellerCtrl = require('../controllers/sellerController');
+const { updateSellerProfileSchema, sellerProfileSchema, updateBillingSchema} = require('../api/validators/sellerSchemas'); // εκεί που το έβαλες
 
-router.get('/:id', ctrl.summary); // δημόσιο
+router.use(requireAuth);
+
+router.get('/me', sellerCtrl.me);
+
+router.put('/me/billing', requireAuth, validateBody(updateBillingSchema), sellerCtrl.updateMyBilling);
 
 
-// Ο authenticated χρήστης ορίζει seller profile (με billingAddress)
-router.put('/me/profile',
-    requireAuth,
-    validateBody(updateSellerProfileSchema),
-    ctrl.updateMySellerProfile
-);
+router.put('/me/profile', requireAuth, validateBody(updateSellerProfileSchema), sellerCtrl.updateMySellerProfile);
 
-// Γίνεται SELLER (αν υπάρχει billingAddress)
-router.post('/me/upgrade',
-    requireAuth,
-    ctrl.upgradeMeToSeller
-);
-
+router.post('/me/upgrade', requireAuth, sellerCtrl.upgradeMeToSeller);
 
 module.exports = router;

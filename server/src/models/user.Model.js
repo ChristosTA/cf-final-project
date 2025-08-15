@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { Schema, model } = mongoose;
 const { v4: uuidv4 } = require('uuid');
 const Counter = require('./counter.Model');
 
@@ -19,6 +20,28 @@ const sellerProfileSchema = new mongoose.Schema({
     approvedAt: { type: Date }
 }, { _id: false });
 
+const BillingInfoSchema = new Schema({
+    legalName: { type: String },
+    businessType: { type: String, enum: ["individual","company"] },
+    vatIdMasked: { type: String },     // π.χ. **1234
+    vatIdHash:   { type: String },     // sha256 για uniqueness
+    invoicingEmail: { type: String },
+
+    address: {
+        line1: String, line2: String, city: String, state: String,
+        postalCode: String, country: String
+    },
+
+    payout: {
+        method: { type: String, enum: ["bank_transfer"], default: "bank_transfer" },
+        ibanMasked: { type: String },    // GR************1234
+        ibanHash:   { type: String },    // sha256(normalized IBAN)
+        ibanLast4:  { type: String },    // "1234"
+        holder: String,
+        bankName: String
+    }
+}, { _id: false });
+
 
 const userSchema = new mongoose.Schema({
     username: { type: String, required: true, trim: true, index: true, unique: true },
@@ -26,7 +49,14 @@ const userSchema = new mongoose.Schema({
     passwordHash: { type: String, required: true },
     roles: { type: [String], enum: ['USER','ADMIN','SELLER',"BUYER"], default: ['USER'], index: true },
     publicId: { type: String, unique: true, index: true },
-    serial: { type: Number, unique: true, index: true }
+    serial: { type: Number, unique: true, index: true },
+    sellerStatus: {
+        type: String,
+        enum: ["NONE","DRAFT","SUBMITTED","APPROVED","REJECTED","NEEDS_MORE_INFO"],
+        default: "NONE",
+        index: true
+    },
+    billing: BillingInfoSchema
 }, { timestamps: true });
 
 userSchema.pre('save', async function(next){
