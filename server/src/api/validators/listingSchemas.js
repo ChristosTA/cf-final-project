@@ -10,13 +10,16 @@ function categoriesField() {
         .transform(v => (Array.isArray(v) ? v : [v]));
 }
 
-const CONDITION = ['NEW_WITH_TAGS','NEW','EXCELLENT','GOOD','FAIR'];
+
 const STATUS = ['ACTIVE','RESERVED','SOLD','HIDDEN'];
 
 const createListingSchema = z.object({
     title: z.string().min(3),
     description: z.string().optional(),
-    condition: z.enum(CONDITION).optional(),
+    condition: z.enum(['NEW_WITH_TAGS','NEW','EXCELLENT','GOOD','FAIR'])
+        .or(z.string())
+        .transform(v => v.toString().trim().toUpperCase())
+        .refine(v => ['NEW_WITH_TAGS','NEW','EXCELLENT','GOOD','FAIR'].includes(v), 'Invalid condition'),
     price: z.number().positive(),
     currency: z.string().length(3).default('EUR'),
     tags: z.array(z.string()).optional(),
@@ -27,7 +30,10 @@ const createListingSchema = z.object({
 const updateListingSchema = z.object({
     title: z.string().min(3).optional(),
     description: z.string().optional(),
-    condition: z.enum(CONDITION).optional(),
+    condition: z.enum(['NEW_WITH_TAGS','NEW','EXCELLENT','GOOD','FAIR'])
+        .or(z.string())
+        .transform(v => v.toString().trim().toUpperCase())
+        .refine(v => ['NEW_WITH_TAGS','NEW','EXCELLENT','GOOD','FAIR'].includes(v), 'Invalid condition'),
     price: z.number().positive().optional(),
     currency: z.string().length(3).optional(),
     tags: z.array(z.string()).optional(),
@@ -50,7 +56,10 @@ const listQuerySchema = z.object({
     }, z.array(z.string()).optional()),
     categoryMode: z.enum(['any','all']).optional(),
     includeChildren: z.coerce.boolean().optional(),
-    condition: z.enum(CONDITION).optional(),
+    condition: z.enum(['NEW_WITH_TAGS','NEW','EXCELLENT','GOOD','FAIR'])
+        .or(z.string())
+        .transform(v => v.toString().trim().toUpperCase())
+        .refine(v => ['NEW_WITH_TAGS','NEW','EXCELLENT','GOOD','FAIR'].includes(v), 'Invalid condition'),
     priceMin: z.coerce.number().nonnegative().optional(),
     priceMax: z.coerce.number().nonnegative().optional(),
     sort: z.enum(['newest','price_asc','price_desc']).optional(),
