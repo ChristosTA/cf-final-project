@@ -40,4 +40,34 @@ async function getSellerRating(sellerId) {
     return r[0] ? { avg: r[0].avg, count: r[0].count } : { avg: 0, count: 0 };
 }
 
-module.exports = { createReview, listSellerReviews, getSellerRating };
+async function updateReview(reviewId, payload) {
+    const patch = {};
+    if (typeof payload.rating !== 'undefined') patch.rating = payload.rating;
+    if (typeof payload.comment !== 'undefined') patch.comment = payload.comment;
+
+    const updated = await Review.findByIdAndUpdate(
+        reviewId,
+        { $set: patch },
+        { new: true, runValidators: true, projection: { __v: 0 } }
+    ).lean();
+
+    if (!updated) {
+        const e = new Error('Review not found');
+        e.status = 404;
+        throw e;
+    }
+    return updated;
+}
+
+// Διαγραφή review
+async function deleteReview(reviewId) {
+    const r = await Review.findByIdAndDelete(reviewId);
+    if (!r) {
+        const e = new Error('Review not found');
+        e.status = 404;
+        throw e;
+    }
+    return true;
+}
+
+module.exports = { createReview, listSellerReviews, getSellerRating, deleteReview, updateReview };
