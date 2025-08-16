@@ -8,7 +8,7 @@
     "dev": "nodemon src/index.js",
     "start": "node src/index.js",
     "lint": "echo \"(add eslint if you want)\"",
-    "seed": "node src/seeds/index.seed.js",
+    "seed": "node src/seeds/seed.js",
     "seed:clean": "node src/seeds/index.seed.js --clean"
   },
   "dependencies": {

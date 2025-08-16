@@ -6,6 +6,8 @@ const {
     changePasswordSchema, refreshSchema, recoveryRequestSchema, recoveryConfirmSchema
 } = require('../api/validators/securitySchemas');
 const ctrl = require('../controllers/authController');
+const { issueCsrfToken } = require('../middlewares/csrf');
+
 
 router.post('/register', validateBody(registerSchema), ctrl.register);
 router.post('/login',    validateBody(loginSchema),    ctrl.login);
@@ -18,5 +20,14 @@ router.post('/logout',   validateBody(refreshSchema).optional?.() || ((req,res,n
 
 router.post('/recovery/request', validateBody(recoveryRequestSchema), ctrl.requestRecovery);
 router.post('/recovery/confirm', validateBody(recoveryConfirmSchema), ctrl.confirmRecovery);
+
+// --- Cookie-mode (SSR-friendly) ---
+router.post('/login-cookie',   validateBody(loginSchema), ctrl.loginCookie);
+// refresh-cookie ΔΕΝ απαιτεί body (παίρνει απ' το cookie)
+router.post('/refresh-cookie', ctrl.refreshCookie);
+// logout-cookie καθαρίζει cookies + revoke refresh
+router.post('/logout-cookie',  ctrl.logoutCookie);
+
+router.get('/csrf', issueCsrfToken);
 
 module.exports = router;

@@ -1,4 +1,6 @@
 const jwt = require('jsonwebtoken');
+const { ACCESS_COOKIE_NAME } = require('../utils/cookies');
+
 
 function requireAuth(req, res, next) {
     const hdr = req.headers.authorization || '';
@@ -24,4 +26,13 @@ function requireRole(...allowed) {
     };
 }
 
-module.exports = { requireAuth, requireRole };
+
+function getTokenFromReq(req) {
+    const h = req.headers.authorization || '';
+    if (h.startsWith('Bearer ')) return h.slice(7);
+    // fallback: cookie-mode
+    if (req.cookies && req.cookies[ACCESS_COOKIE_NAME]) return req.cookies[ACCESS_COOKIE_NAME];
+    return null;
+}
+
+module.exports = { requireAuth, requireRole, getTokenFromReq };
