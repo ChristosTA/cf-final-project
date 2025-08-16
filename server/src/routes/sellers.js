@@ -1,18 +1,29 @@
+// src/routes/sellers.js
 const router = require('express').Router();
 const { requireAuth, requireRole } = require('../middlewares/auth');
-const { validateBody } = require('../middlewares/validate'); // ✅ σωστό import
-const sellerCtrl = require('../controllers/sellerController');
-const { updateSellerProfileSchema, sellerProfileSchema, updateBillingSchema} = require('../api/validators/sellerSchemas'); // εκεί που το έβαλες
+const { validateBody } = require('../middlewares/validate');
 
-router.use(requireAuth);
+const {
+    sellerProfileSchema,
+    sellerBillingSchema,
+} = require('../api/validators/sellerSchemas');
 
-router.get('/me', sellerCtrl.me);
+const ctrl = require('../controllers/sellerController');
 
-router.put('/me/billing', requireAuth, validateBody(updateBillingSchema), sellerCtrl.updateMyBilling);
+// me/profile
+router.put(
+    '/me/profile',
+    requireAuth,
+    validateBody(sellerProfileSchema),
+    ctrl.saveProfile
+);
 
-
-router.put('/me/profile', requireAuth, validateBody(updateSellerProfileSchema), sellerCtrl.updateMySellerProfile);
-
-router.post('/me/upgrade', requireAuth, sellerCtrl.upgradeMeToSeller);
+// me/billing
+router.put(
+    '/me/billing',
+    requireAuth,
+    validateBody(sellerBillingSchema),
+    ctrl.saveBilling
+);
 
 module.exports = router;

@@ -2,7 +2,7 @@ const { Types } = require('mongoose');
 const Listing = require('../models/listing.Model');
 const Review  = require('../models/review.Model');
 const Order   = require('../models/order.Model');
-const { findByAnyId } = require('../utils/findByAnyId'); // το έχεις ήδη
+const { findByAnyId } = require('../utils/resolveId'); // το έχεις ήδη
 
 // Listing: owner = seller
 async function listingOwnerResolver(req) {

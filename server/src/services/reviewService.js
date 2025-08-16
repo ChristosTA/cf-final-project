@@ -1,6 +1,6 @@
 const Review = require('../models/review.Model');
 const Order  = require('../models/order.Model');
-const { requireObjectId } = require('../utils/findByAnyId');
+const { requireObjectId } = require('../utils/resolveId');
 
 async function createReview({ orderId, rating, comment }, currentUser) {
     const _id = await requireObjectId(Order, orderId, 'Order');

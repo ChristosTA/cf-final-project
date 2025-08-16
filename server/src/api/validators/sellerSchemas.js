@@ -1,28 +1,27 @@
 const { z } = require('zod');
 
 const addressSchema = z.object({
-    line1: z.string().min(2),
-    line2: z.string().optional(),
-    city: z.string().min(2),
-    country: z.string().min(2),
-    postalCode: z.string().min(2),
+    line1: z.string().min(1),
+    city: z.string().min(1),
+    country: z.string().min(2).max(3),
+    postalCode: z.string().min(3).max(5),
 });
 
-const sellerProfileSchema = z.object({
-    shopName: z.string().min(2).max(100),
-    description: z.string().max(1000).optional(),
-    phone: z.string().min(4).max(20).optional(),
-    addresses: z.array(addressSchema).default([]),
+const updateProfileSchema = z.object({
+    legalName: z.string().trim().min(2),
+    phone: z.string().trim().min(6).max(30),
+    addresses: z.array(addressSchema).min(1)
 });
 
-const billingSchema = z.object({
-    legalName: z.string().min(2),
-    vatNumber: z.string().min(5),
-    iban: z.string().min(8),
-    billingAddress: addressSchema
+const updateBillingSchema = z.object({
+    legalName: z.string().trim().min(2),
+    taxId: z.string().trim().min(5).max(32),     // π.χ. EL123456789 – κρατάμε χαλαρό κανόνα
+    address: addressSchema,
+    iban: z.string().trim().optional()           // αν θες αυστηρό IBAN, βάλε regex / length check
 });
 
-const updateSellerProfileSchema = sellerProfileSchema.partial(); // PUT me/profile (partial updates)
-const updateBillingSchema = billingSchema;                       // PUT me/billing (πλήρες)
-
-module.exports = { updateSellerProfileSchema, updateBillingSchema };
+module.exports = {
+    addressSchema,
+    updateProfileSchema,
+    updateBillingSchema
+};

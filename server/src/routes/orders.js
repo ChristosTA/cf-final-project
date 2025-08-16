@@ -1,75 +1,55 @@
 const router = require('express').Router();
-const { requireAuth, requireRole} = require('../middlewares/auth');
+const { requireAuth, requireRole } = require('../middlewares/auth');
 const { validateBody, validateQuery } = require('../middlewares/validate');
-const  bindObjectId  = require('../middlewares/bindObjectId');
-const { createOrderSchema, listOrdersQuerySchema, postMessageSchema} = require('../api/validators/orderSchemas');
-const ctrl = require('../controllers/orderController');
-const Listing = require('../models/listing.model');
+const bindObjectId = require('../middlewares/bindObjectId');
+const resolveOrderId = require('../middlewares/resolveOrderId');
+const { canActOnOrder } = require('../middlewares/canActOnOrder'); // ή από utils αν εκεί το έχεις
 
-const Order = require('../models/order.Model');
-const pay = require('../controllers/orderPaymentController');
-const { authorizePaymentSchema, capturePaymentSchema, refundPaymentSchema } = require('../api/validators/transactionSchemas');
-const {canActOnOrder} = require("../middlewares/canActOnOrder");
+const { createOrderSchema, listOrdersQuerySchema, postMessageSchema } = require('../api/validators/orderSchemas');
+const orderCtrl = require('../controllers/orderController');
+const paymentCtrl = require('../controllers/orderPaymentController');
+
+const Listing = require('../models/listing.Model');
 
 router.use(requireAuth);
 
-// List my orders
-router.get('/', validateQuery(listOrdersQuerySchema), ctrl.list);
+router.get('/', validateQuery(listOrdersQuerySchema), orderCtrl.list);
 
-// Create order (from listing)
 router.post('/',
     validateBody(createOrderSchema),
     bindObjectId('listingId', Listing, 'body', 'Listing'),
-    ctrl.create
+    orderCtrl.create
 );
 
-// Get order (buyer/seller/admin)
-router.get('/:id',
-    bindObjectId('id', Order, 'params', 'Order'), // FIX: ήταν Listing, να είναι Order
-    canActOnOrder('any'),
-    ctrl.get
+router.get('/:id', resolveOrderId, orderCtrl.get);
+router.patch('/:id/accept',   resolveOrderId, orderCtrl.accept);
+router.patch('/:id/decline',  resolveOrderId, orderCtrl.decline);
+router.patch('/:id/cancel',   resolveOrderId, orderCtrl.cancel);
+router.patch('/:id/complete', resolveOrderId, orderCtrl.complete);
+
+router.get('/:id/messages',   resolveOrderId, orderCtrl.getMessages);
+router.post('/:id/messages',  resolveOrderId, validateBody(postMessageSchema), orderCtrl.postMessage);
+
+// Payments
+router.post(
+    '/:id/payments/authorize',
+    resolveOrderId,            // ΠΡΩΤΑ λύσε το id
+    canActOnOrder('buyer'),    // μετά έλεγξε ότι είναι ο buyer (ή ADMIN)
+    paymentCtrl.authorize
 );
 
-// Seller accepts
-router.patch('/:id/accept',
-    bindObjectId('id', Order, 'params', 'Order'),
-    canActOnOrder('seller'),
-    ctrl.accept
+router.post(
+    '/:id/payments/capture',
+    resolveOrderId,
+    requireRole('ADMIN'),
+    paymentCtrl.capture
 );
 
-// Seller declines
-router.patch('/:id/decline',
-    bindObjectId('id', Order, 'params', 'Order'),
-    canActOnOrder('seller'),
-    ctrl.decline
-);
-
-// Buyer cancels
-router.patch('/:id/cancel',
-    bindObjectId('id', Order, 'params', 'Order'),
-    canActOnOrder('buyer'),
-    ctrl.cancel
-);
-
-// Mark completed (buyer or seller)
-router.patch('/:id/complete',
-    bindObjectId('id', Order, 'params', 'Order'),
-    canActOnOrder('any'),
-    ctrl.complete
-);
-
-// Order messages (both parties)
-router.get('/:id/messages',
-    bindObjectId('id', Order, 'params', 'Order'),
-    canActOnOrder('any'),
-    ctrl.getMessages
-);
-
-router.post('/:id/messages',
-    bindObjectId('id', Order, 'params', 'Order'),
-    canActOnOrder('any'),
-    validateBody(postMessageSchema),
-    ctrl.postMessage
+router.post(
+    '/:id/payments/refund',
+    resolveOrderId,
+    requireRole('ADMIN'),
+    paymentCtrl.refund
 );
 
 module.exports = router;

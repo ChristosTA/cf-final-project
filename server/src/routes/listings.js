@@ -1,3 +1,4 @@
+// src/routes/listings.js
 const router = require('express').Router();
 const { validateBody, validateQuery } = require('../middlewares/validate');
 const { requireAuth, requireRole } = require('../middlewares/auth');
@@ -13,19 +14,26 @@ const resolveIdsArray = require('../middlewares/resolveIdsArrayFactory');
 const Listing = require('../models/listing.Model');
 const Category = require('../models/category.Model');
 
-const { createListingSchema, updateListingSchema, listQuerySchema } = require('../api/validators/listingSchemas');
+const {
+    createListingSchema,
+    updateListingSchema,
+    listQuerySchema,
+} = require('../api/validators/listingSchemas');
+
 const ctrl = require('../controllers/listingController');
 
 // LIST
-router.get('/',
-    apparelFilters({ normalizer: v => String(v).trim() }),   // <<< brand/size/color -> tags
+router.get(
+    '/',
+    apparelFilters({ normalizer: v => String(v).trim() }),   // brand/size/color -> tags
     validateQuery(listQuerySchema),
     resolveIdsArray('query', 'categories', Category, 'Category'),
     ctrl.list
 );
 
 // CREATE (SELLER/ADMIN)
-router.post('/',
+router.post(
+    '/',
     requireAuth, requireRole('SELLER','ADMIN'),
     validateBody(createListingSchema),
     resolveIdsArray('body','categories', Category, 'Category'),
@@ -33,49 +41,55 @@ router.post('/',
 );
 
 // READ by id
-router.get('/:id',
+router.get(
+    '/:id',
     bindObjectId('id', Listing, 'params', 'Listing'),
     ctrl.get
 );
 
 // UPDATE (owner OR admin)
-router.put('/:id',
-    requireAuth, requireRole('SELLER','ADMIN'),     // πρέπει να είναι seller ή admin
-    bindObjectId('id', Listing),
+router.put(
+    '/:id',
+    requireAuth, requireRole('SELLER','ADMIN'),
+    bindObjectId('id', Listing, 'params', 'Listing'),
     validateBody(updateListingSchema),
     resolveIdsArray('body','categories', Category, 'Category'),
-    ensureListingOwner,                              // και να είναι ο ιδιοκτήτης (ή admin)
+    ensureListingOwner,
     ctrl.update
 );
 
 // DELETE (owner OR admin)
-router.delete('/:id',
+router.delete(
+    '/:id',
     requireAuth, requireRole('SELLER','ADMIN'),
-    bindObjectId('id', Listing),
+    bindObjectId('id', Listing, 'params', 'Listing'),
     ensureListingOwner,
     ctrl.remove
 );
 
 // PHOTOS
-const upload = require('../middlewares/upload'); // το δικό σου
-router.post('/:id/photos',
+const upload = require('../middlewares/upload');
+router.post(
+    '/:id/photos',
     requireAuth, requireRole('SELLER','ADMIN'),
-    bindObjectId('id', Listing),
+    bindObjectId('id', Listing, 'params', 'Listing'),
     upload.array('photos', 6),
-    ensureListingOwner,                              // owner check
+    ensureListingOwner,
     ctrl.addPhotos
 );
 
-router.delete('/:id/photos/:photoId',
+router.delete(
+    '/:id/photos/:photoId',
     requireAuth, requireRole('SELLER','ADMIN'),
-    bindObjectId('id', Listing),
+    bindObjectId('id', Listing, 'params', 'Listing'),
     ensureListingOwner,
     ctrl.removePhoto
 );
 
-router.patch('/:id/photos/:photoId/cover',
+router.patch(
+    '/:id/photos/:photoId/cover',
     requireAuth, requireRole('SELLER','ADMIN'),
-    bindObjectId('id', Listing),
+    bindObjectId('id', Listing, 'params', 'Listing'),
     ensureListingOwner,
     ctrl.setCoverPhoto
 );

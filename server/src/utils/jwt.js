@@ -1,3 +1,4 @@
+// server/src/utils/jwt.js
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 
@@ -14,12 +15,26 @@ function signAccessToken(user) {
         { expiresIn: ACCESS_TTL }
     );
 }
+
 function signRefreshToken(payload) { // { sub, jti }
     return jwt.sign(payload, REFRESH_SECRET, { expiresIn: REFRESH_TTL });
 }
+
 function verifyRefresh(token) { return jwt.verify(token, REFRESH_SECRET); }
+
+// ✅ ΝΕΟ: verify για access token, ώστε middleware να μην “μαντεύει” secret
+function verifyAccess(token) { return jwt.verify(token, ACCESS_SECRET); }
 
 function sha256(s) { return crypto.createHash('sha256').update(String(s)).digest('hex'); }
 function randomId(bytes = 16) { return crypto.randomBytes(bytes).toString('hex'); }
 
-module.exports = { signAccessToken, signRefreshToken, verifyRefresh, sha256, randomId, ACCESS_TTL, REFRESH_TTL };
+module.exports = {
+    signAccessToken,
+    signRefreshToken,
+    verifyRefresh,
+    verifyAccess,        // ✅ export
+    sha256,
+    randomId,
+    ACCESS_TTL,
+    REFRESH_TTL
+};

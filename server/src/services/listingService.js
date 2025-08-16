@@ -5,7 +5,7 @@ const path = require('path');
 const fs = require('fs');
 const { ensureOwnerOrAdmin, isAdmin } = require('../utils/permissions');
 const getStorage = require('../config/storage');
-const  requireObjectId = require('../utils/findByAnyId');
+const  requireObjectId = require('../utils/resolveId');
 
 
 

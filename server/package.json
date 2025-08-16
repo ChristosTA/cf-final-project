@@ -9,7 +9,10 @@
     "start": "node src/index.js",
     "lint": "echo \"(add eslint if you want)\"",
     "seed": "node src/seeds/seed.js",
-    "seed:clean": "node src/seeds/index.seed.js --clean"
+    "seed:clean": "node src/seeds/index.seed.js --clean",
+    "test": "cross-env NODE_ENV=test LOG_LEVEL=error jest --runInBand --config ./jest.config.js",
+    "test:watch": "cross-env NODE_ENV=test LOG_LEVEL=error jest --watch --config ./jest.config.js",
+    "prebuild": "npm test"
   },
   "dependencies": {
     "bcrypt": "^6.0.0",
@@ -26,6 +29,10 @@
     "zod": "^4.0.16"
   },
   "devDependencies": {
-    "nodemon": "^3.1.0"
+    "cross-env": "^10.0.0",
+    "jest": "^30.0.5",
+    "mongodb-memory-server": "^10.2.0",
+    "nodemon": "^3.1.0",
+    "supertest": "^7.1.4"
   }
 }

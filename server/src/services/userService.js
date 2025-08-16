@@ -72,20 +72,19 @@ async function removeUser(objectId, currentUser) {
 
 /* seller profile */
 async function updateSellerProfile(userId, payload) {
-    const doc = await User.findById(userId, { sellerStatus: 1, sellerProfile: 1 }).lean();
-    /** @type {{ sellerStatus?: 'NONE'|'DRAFT'|'SUBMITTED'|'APPROVED'|'REJECTED'|'NEEDS_MORE_INFO', sellerProfile?: any } | null} */
-    const user = doc;                                     // ✅ IDE-friendly cast
-
+    const user = await User.findById(userId, { sellerStatus: 1, sellerProfile: 1 }).lean();
     if (!user) { const e = new Error('User not found'); e.status = 404; throw e; }
 
     const profileUpdate = pick(payload, ['shopName', 'description', 'phone', 'addresses']);
+
+    const currentProfile = (user.sellerProfile && user.sellerProfile.profile) ? user.sellerProfile.profile : {};
     const set = {
-        'sellerProfile.profile': { ...(user.sellerProfile?.profile || {}), ...profileUpdate },
+        'sellerProfile.profile': { ...currentProfile, ...profileUpdate },
         'sellerProfile.profileUpdatedAt': new Date()
     };
 
     // αν ήταν NONE, πάει DRAFT με το πρώτο profile update
-    if (user.sellerStatus === 'NONE') set['sellerStatus'] = 'DRAFT';
+    if (user.sellerStatus === 'NONE' || !user.sellerStatus) set['sellerStatus'] = 'DRAFT';
 
     await User.updateOne({ _id: userId }, { $set: set });
     return await User.findById(userId, {

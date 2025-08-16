@@ -1,3 +1,4 @@
+
 require('dotenv').config();
 const express = require('express');
 const helmet = require('helmet');
@@ -7,7 +8,6 @@ const cookieParser = require('cookie-parser');
 const mongoose = require('mongoose');
 const path = require('path');
 const { csrfIfCookieAuth } = require('./middlewares/csrf');
-
 
 const app = express();
 
@@ -19,7 +19,7 @@ mongoose.connect(process.env.MONGODB_URI).then(() => {
   process.exit(1);
 });
 
-// Basic security & parsing
+// Middlewares
 app.use(helmet());
 app.use(cors({
   origin: (process.env.CLIENT_URL || 'http://localhost:5173').split(','),
@@ -32,7 +32,6 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.use(morgan('dev'));
 app.use(csrfIfCookieAuth);
-
 
 // Routes
 const swaggerUi = require('swagger-ui-express');
@@ -50,6 +49,10 @@ const { notFound, errorHandler } = require('./middlewares/error');
 app.use(notFound);
 app.use(errorHandler);
 
-// Start
-const port = process.env.PORT || 4000;
-app.listen(port, () => console.log(`API listening on http://localhost:${port}`));
+// ✅ ΜΟΝΟ όταν τρέχεις κανονικά (όχι στα tests)
+if (require.main === module) {
+  const port = process.env.PORT || 4000;
+  app.listen(port, () => console.log(`API listening on http://localhost:${port}`));
+}
+
+module.exports = app;

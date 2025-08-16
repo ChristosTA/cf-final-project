@@ -10,7 +10,11 @@ const orderSchema = new mongoose.Schema({
     sellerId:  { type: mongoose.Schema.Types.ObjectId, ref: 'User',    required: true, index: true },
     buyerId:   { type: mongoose.Schema.Types.ObjectId, ref: 'User',    required: true, index: true },
 
-    status:    { type: String, enum: ['REQUESTED','ACCEPTED','DECLINED','CANCELLED','COMPLETED'], default: 'REQUESTED', index: true }
+    price:     { type: Number, required: true },
+    currency:  { type: String, default: 'EUR' },
+
+    status:    { type: String, enum: ['REQUESTED','ACCEPTED','DECLINED','CANCELLED','COMPLETED'], default: 'REQUESTED', index: true },
+    paymentStatus: { type: String, enum: ['UNPAID','AUTHORIZED','CAPTURED','REFUNDED'], default: 'UNPAID', index: true }
 }, { timestamps: true });
 
 const messageSchema = new mongoose.Schema({

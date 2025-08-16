@@ -1,200 +1,400 @@
 {
   "openapi": "3.0.3",
   "info": {
-    "title": "Marketplace API (Clothing focus)",
-    "version": "1.3.0",
+    "title": "Marketplace API (Clothing)",
+    "version": "1.4.0",
     "description": "IDs: _id | publicId (uuid) | serial · RBAC: USER/SELLER/ADMIN · Uploads: local/cloudinary"
   },
-  "servers": [{ "url": "http://localhost:4000", "description": "Local" }],
+  "servers": [
+    {
+      "url": "http://localhost:4000"
+    }
+  ],
   "tags": [
-    { "name": "Auth" },
-    { "name": "Users" },
-    { "name": "Categories" },
-    { "name": "Listings" },
-    { "name": "Favorites" },
-    { "name": "Orders" },
-    { "name": "Reviews" },
-    { "name": "Sellers" },
-    { "name": "Admin Sellers" }
+    {
+      "name": "Auth"
+    },
+    {
+      "name": "Users"
+    },
+    {
+      "name": "Categories"
+    },
+    {
+      "name": "Listings"
+    },
+    {
+      "name": "Favorites"
+    },
+    {
+      "name": "Orders"
+    },
+    {
+      "name": "Payments"
+    },
+    {
+      "name": "Reviews"
+    },
+    {
+      "name": "Sellers"
+    },
+    {
+      "name": "Admin Sellers"
+    }
   ],
   "components": {
     "securitySchemes": {
-      "bearerAuth": { "type": "http", "scheme": "bearer", "bearerFormat": "JWT" }
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
     },
     "schemas": {
       "Error": {
         "type": "object",
         "properties": {
-          "code": { "type": "integer", "example": 400 },
-          "message": { "type": "string", "example": "Validation error" }
+          "code": {
+            "type": "integer",
+            "example": 400
+          },
+          "message": {
+            "type": "string",
+            "example": "Validation error"
+          }
         }
       },
       "SellerStatus": {
         "type": "string",
-        "enum": ["NONE","DRAFT","SUBMITTED","APPROVED","REJECTED","NEEDS_MORE_INFO"],
+        "enum": [
+          "NONE",
+          "DRAFT",
+          "SUBMITTED",
+          "APPROVED",
+          "REJECTED",
+          "NEEDS_MORE_INFO"
+        ],
         "example": "NONE"
       },
       "Address": {
         "type": "object",
-        "required": ["line1","city","postalCode","country"],
+        "required": [
+          "line1",
+          "city",
+          "postalCode",
+          "country"
+        ],
         "properties": {
-          "line1": { "type": "string", "example": "Ermou 15" },
-          "line2": { "type": "string", "example": "2nd floor" },
-          "city": { "type": "string", "example": "Athens" },
-          "state": { "type": "string", "example": "Attica" },
-          "postalCode": { "type": "string", "example": "10563" },
-          "country": { "type": "string", "example": "GR" }
+          "line1": {
+            "type": "string",
+            "example": "Ermou 15"
+          },
+          "line2": {
+            "type": "string",
+            "example": "2nd floor"
+          },
+          "city": {
+            "type": "string",
+            "example": "Athens"
+          },
+          "state": {
+            "type": "string",
+            "example": "Attica"
+          },
+          "postalCode": {
+            "type": "string",
+            "example": "10563"
+          },
+          "country": {
+            "type": "string",
+            "example": "GR"
+          }
         }
       },
       "AuthRegister": {
         "type": "object",
-        "required": ["email","username","name","password"],
+        "required": [
+          "email",
+          "username",
+          "name",
+          "password"
+        ],
         "properties": {
-          "email": { "type": "string" },
-          "username": { "type": "string" },
-          "name": { "type": "string" },
-          "password": { "type": "string" }
+          "email": {
+            "type": "string"
+          },
+          "username": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "password": {
+            "type": "string"
+          }
         },
-        "example": { "email":"alex@gmail.com","username":"alexandros","name":"Alex","password":"secret123" }
+        "example": {
+          "email": "alex@gmail.com",
+          "username": "alexandros",
+          "name": "Alex",
+          "password": "secret123"
+        }
       },
       "AuthLogin": {
         "type": "object",
-        "required": ["email","password"],
+        "required": [
+          "email",
+          "password"
+        ],
         "properties": {
-          "email": { "type":"string" },
-          "password": { "type":"string" }
+          "email": {
+            "type": "string"
+          },
+          "password": {
+            "type": "string"
+          }
         },
-        "example": { "email":"alex@gmail.com","password":"secret123" }
-      },
-      "AuthRefresh": {
-        "type": "object",
-        "required": ["refreshToken"],
-        "properties": { "refreshToken": { "type": "string", "example": "<refresh-jwt>" } }
+        "example": {
+          "email": "alex@gmail.com",
+          "password": "secret123"
+        }
       },
       "AuthRecoveryRequest": {
         "type": "object",
-        "required": ["email"],
-        "properties": { "email": { "type": "string", "example": "alex@gmail.com" } }
+        "required": [
+          "email"
+        ],
+        "properties": {
+          "email": {
+            "type": "string",
+            "example": "alex@gmail.com"
+          }
+        }
       },
       "AuthRecoveryConfirm": {
         "type": "object",
-        "required": ["token","password"],
+        "required": [
+          "token",
+          "password"
+        ],
         "properties": {
-          "token": { "type": "string", "example": "recovery-token-or-jwt" },
-          "password": { "type": "string", "example": "newStrongPass123" }
+          "token": {
+            "type": "string",
+            "example": "recovery-token"
+          },
+          "password": {
+            "type": "string",
+            "example": "newStrongPass123"
+          }
         }
       },
       "UserPublic": {
         "type": "object",
         "properties": {
-          "_id": { "type": "string", "example": "66c0e3f4f4b77d0012a9c111" },
-          "publicId": { "type": "string", "example": "b3e2bf6a-7c7c-4d8f-8f2e-73b6b4f0d2a3" },
-          "serial": { "type": "integer", "example": 5 },
-          "email": { "type": "string", "example": "alex@gmail.com" },
-          "username": { "type": "string", "example": "alexandros" },
-          "name": { "type": "string", "example": "Alex" },
-          "roles": { "type": "array", "items": { "type": "string", "enum": ["USER","SELLER","ADMIN"] }, "example": ["USER","SELLER"] },
-          "sellerStatus": { "$ref": "#/components/schemas/SellerStatus" }
+          "_id": {
+            "type": "string"
+          },
+          "publicId": {
+            "type": "string"
+          },
+          "serial": {
+            "type": "integer"
+          },
+          "email": {
+            "type": "string"
+          },
+          "username": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "roles": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "USER",
+                "SELLER",
+                "ADMIN"
+              ]
+            }
+          },
+          "sellerStatus": {
+            "$ref": "#/components/schemas/SellerStatus"
+          }
         }
       },
       "SellerProfileUpdate": {
         "type": "object",
         "properties": {
-          "shopName": { "type": "string", "example": "Christos Apparel" },
-          "description": { "type": "string", "example": "Casual streetwear & basics." },
-          "phone": { "type": "string", "example": "+3069XXXXXXXX" },
+          "shopName": {
+            "type": "string",
+            "example": "Christos Apparel"
+          },
+          "description": {
+            "type": "string",
+            "example": "Streetwear & basics"
+          },
+          "phone": {
+            "type": "string",
+            "example": "+3069XXXXXXXX"
+          },
           "addresses": {
             "type": "array",
-            "items": { "$ref": "#/components/schemas/Address" },
-            "example": [{ "line1":"Kifisias 1","city":"Athens","postalCode":"11523","country":"GR" }]
+            "items": {
+              "$ref": "#/components/schemas/Address"
+            }
           }
-        }
-      },
-      "SellerProfile": {
-        "type": "object",
-        "properties": {
-          "profile": { "$ref": "#/components/schemas/SellerProfileUpdate" },
-          "approved": { "type": "boolean", "example": true },
-          "approvedAt": { "type": "string", "nullable": true },
-          "reviewNote": { "type": "string", "nullable": true },
-          "verification": {
-            "type": "object",
-            "properties": {
-              "status": { "$ref": "#/components/schemas/SellerStatus" },
-              "updatedAt": { "type": "string", "nullable": true }
-            }
-          },
-          "billing": {
-            "type": "object",
-            "properties": {
-              "legalName": { "type": "string" },
-              "vatNumber": { "type": "string" },
-              "billingAddress": { "$ref": "#/components/schemas/Address" },
-              "ibanLast4": { "type": "string", "example": "0695" }
-            }
-          },
-          "activatedAt": { "type": "string", "nullable": true }
         }
       },
       "SellerBillingUpsert": {
         "type": "object",
-        "required": ["legalName","vatNumber","iban","billingAddress"],
+        "required": [
+          "legalName",
+          "vatNumber",
+          "iban",
+          "billingAddress"
+        ],
         "properties": {
-          "legalName": { "type": "string", "example": "Xristos Ltd" },
-          "vatNumber": { "type": "string", "example": "EL123456789" },
-          "iban": { "type": "string", "example": "GR1601101250000000012300695" },
-          "billingAddress": { "$ref": "#/components/schemas/Address" }
+          "legalName": {
+            "type": "string",
+            "example": "Xristos Ltd"
+          },
+          "vatNumber": {
+            "type": "string",
+            "example": "EL123456789"
+          },
+          "iban": {
+            "type": "string",
+            "example": "GR1601101250000000012300695"
+          },
+          "billingAddress": {
+            "$ref": "#/components/schemas/Address"
+          }
         }
       },
       "Category": {
         "type": "object",
         "properties": {
-          "_id": { "type": "string" },
-          "publicId": { "type": "string" },
-          "serial": { "type": "integer" },
-          "name": { "type": "string", "example": "Clothing" },
-          "slug": { "type": "string", "example": "clothing" },
-          "parent": { "type": "string", "nullable": true }
+          "name": {
+            "type": "string",
+            "example": "Hoodies"
+          },
+          "slug": {
+            "type": "string",
+            "example": "hoodies"
+          },
+          "parent": {
+            "type": "string",
+            "nullable": true
+          }
         }
       },
       "Photo": {
         "type": "object",
         "properties": {
-          "provider": { "type": "string", "enum": ["local","cloudinary"] },
-          "url": { "type": "string", "example": "https://res.cloudinary.com/demo/image/upload/v1/hoodie.jpg" },
-          "key": { "type": "string", "example": "demo/hoodie" },
-          "isCover": { "type": "boolean", "example": true }
+          "provider": {
+            "type": "string",
+            "enum": [
+              "local",
+              "cloudinary"
+            ],
+            "example": "cloudinary"
+          },
+          "url": {
+            "type": "string",
+            "example": "https://res.cloudinary.com/demo/image/upload/v1/hoodie.jpg"
+          },
+          "key": {
+            "type": "string",
+            "example": "demo/hoodie"
+          },
+          "isCover": {
+            "type": "boolean",
+            "example": true
+          }
         }
       },
       "Listing": {
         "type": "object",
         "properties": {
-          "_id": { "type": "string" },
-          "publicId": { "type": "string" },
-          "serial": { "type": "integer" },
-          "title": { "type": "string", "example": "Hoodie Heavyweight - Black - L" },
-          "description": { "type": "string", "example": "Oversized fit, cotton 100%." },
-          "price": { "type": "number", "example": 49.9 },
-          "condition": { "type": "string", "enum": ["NEW_WITH_TAGS","NEW","EXCELLENT","GOOD","FAIR"], "example": "NEW_WITH_TAGS" },
-          "category": { "type": "string", "example": "clothing" },
-          "tags": { "type": "array", "items": { "type": "string" }, "example": ["hoodie","black","L","men","streetwear"] },
-          "photos": { "type": "array", "items": { "$ref": "#/components/schemas/Photo" } },
-          "seller": { "type": "string" },
-          "isActive": { "type": "boolean", "example": true },
-          "createdAt": { "type": "string" }
+          "title": {
+            "type": "string",
+            "example": "Hoodie Heavyweight - Black - L"
+          },
+          "description": {
+            "type": "string",
+            "example": "Oversized fit, cotton 100%."
+          },
+          "price": {
+            "type": "number",
+            "example": 49.9
+          },
+          "condition": {
+            "type": "string",
+            "enum": [
+              "NEW_WITH_TAGS",
+              "NEW",
+              "EXCELLENT",
+              "GOOD",
+              "FAIR"
+            ],
+            "example": "NEW_WITH_TAGS"
+          },
+          "category": {
+            "type": "string",
+            "example": "hoodies"
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "example": [
+              "hoodie",
+              "black",
+              "L",
+              "men",
+              "UrbanX"
+            ]
+          }
         }
       },
       "ListingSearchResponse": {
         "type": "object",
         "properties": {
-          "results": { "type": "array", "items": { "$ref": "#/components/schemas/Listing" } },
-          "total": { "type": "integer", "example": 123 },
+          "results": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Listing"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "example": 42
+          },
           "facets": {
             "type": "object",
             "properties": {
-              "categories": { "type": "array", "items": { "type": "object", "properties": { "_id": { "type": "string" }, "count": { "type": "integer" } } } },
-              "tags": { "type": "array", "items": { "type": "object", "properties": { "_id": { "type": "string" }, "count": { "type": "integer" } } } },
-              "condition": { "type": "array", "items": { "type": "object", "properties": { "_id": { "type": "string" }, "count": { "type": "integer" } } } }
+              "categories": {
+                "type": "array",
+                "items": {
+                  "type": "object"
+                }
+              },
+              "tags": {
+                "type": "array",
+                "items": {
+                  "type": "object"
+                }
+              },
+              "condition": {
+                "type": "array",
+                "items": {
+                  "type": "object"
+                }
+              }
             }
           }
         }
@@ -204,308 +404,1418 @@
   "paths": {
     "/api/auth/register": {
       "post": {
-        "tags": ["Auth"],
+        "tags": [
+          "Auth"
+        ],
         "summary": "Register",
-        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AuthRegister" } } } },
-        "responses": { "201": { "description": "Created" } }
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AuthRegister"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created"
+          }
+        }
       }
     },
     "/api/auth/login": {
       "post": {
-        "tags": ["Auth"],
-        "summary": "Login",
-        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AuthLogin" } } } },
-        "responses": { "200": { "description": "OK", "content": { "application/json": { "schema": { "type":"object", "properties": { "accessToken": { "type":"string" }, "refreshToken": { "type":"string" } } } } } } }
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Login (Bearer)",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AuthLogin"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
       }
     },
     "/api/auth/refresh": {
       "post": {
-        "tags": ["Auth"],
-        "summary": "Refresh access token (rotation)",
-        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AuthRefresh" } } } },
-        "responses": { "200": { "description": "OK" } }
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Refresh (Bearer)",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
       }
     },
     "/api/auth/logout": {
       "post": {
-        "tags": ["Auth"],
-        "summary": "Logout (revoke refresh token)",
-        "requestBody": { "required": false, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AuthRefresh" } } } },
-        "responses": { "204": { "description": "No Content" } }
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Logout (Bearer)",
+        "responses": {
+          "204": {
+            "description": "No Content"
+          }
+        }
+      }
+    },
+    "/api/auth/login-cookie": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Login (HttpOnly cookies)",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AuthLogin"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Cookies set + user"
+          }
+        }
+      }
+    },
+    "/api/auth/refresh-cookie": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Refresh (cookies)",
+        "responses": {
+          "200": {
+            "description": "Cookies rotated"
+          }
+        }
+      }
+    },
+    "/api/auth/logout-cookie": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Logout (cookies)",
+        "responses": {
+          "204": {
+            "description": "No Content"
+          }
+        }
+      }
+    },
+    "/api/auth/csrf": {
+      "get": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Issue CSRF token (XSRF-TOKEN cookie)",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
       }
     },
     "/api/auth/recovery/request": {
       "post": {
-        "tags": ["Auth"],
-        "summary": "Request password recovery link",
-        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AuthRecoveryRequest" } } } },
-        "responses": { "200": { "description": "If email exists, a token is issued (DEV returns token)" } }
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Request password recovery",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AuthRecoveryRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
       }
     },
     "/api/auth/recovery/confirm": {
       "post": {
-        "tags": ["Auth"],
+        "tags": [
+          "Auth"
+        ],
         "summary": "Confirm password recovery",
-        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AuthRecoveryConfirm" } } } },
-        "responses": { "200": { "description": "Password changed" } }
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AuthRecoveryConfirm"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
       }
     },
-
     "/api/me": {
       "get": {
-        "tags": ["Users"],
-        "summary": "Get my profile",
-        "security": [{ "bearerAuth": [] }],
-        "responses": { "200": { "description": "OK", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UserPublic" } } } } }
+        "tags": [
+          "Users"
+        ],
+        "summary": "My profile",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserPublic"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/api/users": {
       "get": {
-        "tags": ["Users"],
+        "tags": [
+          "Users"
+        ],
         "summary": "List users (ADMIN)",
-        "security": [{ "bearerAuth": [] }],
-        "responses": { "200": { "description": "OK" }, "403": { "description": "Forbidden" } }
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "403": {
+            "description": "Forbidden"
+          }
+        }
       }
     },
     "/api/users/{id}": {
       "get": {
-        "tags": ["Users"],
+        "tags": [
+          "Users"
+        ],
         "summary": "Get user (ADMIN)",
-        "security": [{ "bearerAuth": [] }],
-        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type":"string" }, "description": "_id | publicId | serial" }],
-        "responses": { "200": { "description": "OK" }, "404": { "description": "Not found" } }
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "404": {
+            "description": "Not found"
+          }
+        }
       },
       "delete": {
-        "tags": ["Users"],
+        "tags": [
+          "Users"
+        ],
         "summary": "Delete user (ADMIN)",
-        "security": [{ "bearerAuth": [] }],
-        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type":"string" } }],
-        "responses": { "204": { "description": "Deleted" }, "404": { "description": "Not found" } }
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted"
+          }
+        }
       }
     },
     "/api/users/{id}/roles": {
       "patch": {
-        "tags": ["Users"],
+        "tags": [
+          "Users"
+        ],
         "summary": "Update user roles (ADMIN)",
-        "security": [{ "bearerAuth": [] }],
-        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type":"string" } }],
-        "requestBody": { "required": true, "content": { "application/json": { "schema": { "type":"object", "properties": { "roles": { "type":"array", "items": { "type":"string", "enum": ["USER","SELLER","ADMIN"] } } }, "required":["roles"] }, "example": { "roles": ["USER","ADMIN"] } } } },
-        "responses": { "200": { "description": "OK" } }
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "roles"
+                ],
+                "properties": {
+                  "roles": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "enum": [
+                        "USER",
+                        "SELLER",
+                        "ADMIN"
+                      ]
+                    }
+                  }
+                }
+              },
+              "example": {
+                "roles": [
+                  "USER",
+                  "ADMIN"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
       }
     },
-
     "/api/categories": {
-      "get": { "tags": ["Categories"], "summary": "List categories", "responses": { "200": { "description": "OK" } } },
+      "get": {
+        "tags": [
+          "Categories"
+        ],
+        "summary": "List categories",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
       "post": {
-        "tags": ["Categories"],
+        "tags": [
+          "Categories"
+        ],
         "summary": "Create category (ADMIN)",
-        "security": [{ "bearerAuth": [] }],
-        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Category" }, "example": { "name": "Hoodies", "slug": "hoodies", "parent":"clothing" } } } },
-        "responses": { "201": { "description": "Created" } }
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Category"
+              },
+              "example": {
+                "name": "Hoodies",
+                "slug": "hoodies",
+                "parent": "clothing"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created"
+          }
+        }
       }
     },
     "/api/categories/{id}": {
       "get": {
-        "tags": ["Categories"],
+        "tags": [
+          "Categories"
+        ],
         "summary": "Get category",
-        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" }, "description": "_id | publicId | serial" }],
-        "responses": { "200": { "description": "OK" }, "404": { "description": "Not found" } }
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "404": {
+            "description": "Not found"
+          }
+        }
       },
       "patch": {
-        "tags": ["Categories"],
-        "summary": "Update category (ADMIN)",
-        "security": [{ "bearerAuth": [] }],
-        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type":"string" } }],
-        "requestBody": { "required": false, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Category" }, "example": { "name": "Sweatshirts" } } } },
-        "responses": { "200": { "description": "OK" } }
+        "tags": [
+          "Categories"
+        ],
+        "summary": "Update (ADMIN)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Category"
+              },
+              "example": {
+                "name": "Sweatshirts"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
       },
       "delete": {
-        "tags": ["Categories"],
-        "summary": "Delete category (ADMIN)",
-        "security": [{ "bearerAuth": [] }],
-        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type":"string" } }],
-        "responses": { "204": { "description": "Deleted" } }
+        "tags": [
+          "Categories"
+        ],
+        "summary": "Delete (ADMIN)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted"
+          }
+        }
       }
     },
-
     "/api/listings": {
       "get": {
-        "tags": ["Listings"],
-        "summary": "Search listings with facets",
-        "parameters": [
-          { "name": "q", "in": "query", "schema": { "type": "string" }, "example": "hoodie black" },
-          { "name": "categories", "in": "query", "schema": { "type": "string" }, "description": "CSV or repeatable", "example": "clothing,hoodies" },
-          { "name": "tags", "in": "query", "schema": { "type": "string" }, "example": "hoodie,black,L,men" },
-          { "name": "condition", "in": "query", "schema": { "type": "string", "enum": ["NEW_WITH_TAGS","NEW","EXCELLENT","GOOD","FAIR"] } },
-          { "name": "priceMin", "in": "query", "schema": { "type": "number" }, "example": 20 },
-          { "name": "priceMax", "in": "query", "schema": { "type": "number" }, "example": 120 },
-          { "name": "seller", "in": "query", "schema": { "type": "string" }, "description": "_id | publicId | serial" },
-          { "name": "sort", "in": "query", "schema": { "type": "string", "enum": ["relevance","price_asc","price_desc","newest"] } },
-          { "name": "page", "in": "query", "schema": { "type": "integer", "default": 1 } },
-          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 24 } }
+        "tags": [
+          "Listings"
         ],
-        "responses": { "200": { "description": "OK", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ListingSearchResponse" } } } } }
+        "summary": "Search listings (facets)",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "example": "hoodie black"
+          },
+          {
+            "name": "categories",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "example": "clothing,hoodies"
+          },
+          {
+            "name": "tags",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "example": "UrbanX,black,L"
+          },
+          {
+            "name": "brand",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "example": "UrbanX"
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "example": "M"
+          },
+          {
+            "name": "color",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "example": "black"
+          },
+          {
+            "name": "condition",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "NEW_WITH_TAGS",
+                "NEW",
+                "EXCELLENT",
+                "GOOD",
+                "FAIR"
+              ]
+            }
+          },
+          {
+            "name": "priceMin",
+            "in": "query",
+            "schema": {
+              "type": "number"
+            },
+            "example": 20
+          },
+          {
+            "name": "priceMax",
+            "in": "query",
+            "schema": {
+              "type": "number"
+            },
+            "example": 120
+          },
+          {
+            "name": "seller",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "_id | publicId | serial"
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "relevance",
+                "price_asc",
+                "price_desc",
+                "newest"
+              ]
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 24
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListingSearchResponse"
+                }
+              }
+            }
+          }
+        }
       },
       "post": {
-        "tags": ["Listings"],
-        "summary": "Create listing (APPROVED SELLER)",
-        "security": [{ "bearerAuth": [] }],
-        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Listing" }, "example": {
-          "title":"Hoodie Heavyweight - Black - L",
-          "description":"Oversized fit, cotton 100%.",
-          "price":49.9,
-          "condition":"NEW_WITH_TAGS",
-          "category":"hoodies",
-          "tags":["hoodie","black","L","men","streetwear"]
-        } } } },
-        "responses": { "201": { "description": "Created" }, "403": { "description": "Forbidden (not approved seller)" } }
+        "tags": [
+          "Listings"
+        ],
+        "summary": "Create listing (APPROVED SELLER/ADMIN)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Listing"
+              },
+              "example": {
+                "title": "Hoodie Heavyweight - Black - L",
+                "description": "Oversized fit",
+                "price": 49.9,
+                "condition": "NEW_WITH_TAGS",
+                "category": "hoodies",
+                "tags": [
+                  "hoodie",
+                  "black",
+                  "L",
+                  "UrbanX"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created"
+          },
+          "403": {
+            "description": "Forbidden (not approved seller)"
+          }
+        }
       }
     },
     "/api/listings/{id}": {
       "get": {
-        "tags": ["Listings"],
+        "tags": [
+          "Listings"
+        ],
         "summary": "Get listing",
-        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" }, "description": "_id | publicId | serial" }],
-        "responses": { "200": { "description": "OK" }, "404": { "description": "Not found" } }
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "404": {
+            "description": "Not found"
+          }
+        }
       },
       "patch": {
-        "tags": ["Listings"],
-        "summary": "Update listing (owner/admin)",
-        "security": [{ "bearerAuth": [] }],
-        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
-        "requestBody": { "required": false, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Listing" }, "example": { "price": 44.9 } } } },
-        "responses": { "200": { "description": "OK" }, "403": { "description": "Forbidden" } }
+        "tags": [
+          "Listings"
+        ],
+        "summary": "Update (owner/admin)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Listing"
+              },
+              "example": {
+                "price": 44.9
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "403": {
+            "description": "Forbidden"
+          }
+        }
       },
       "delete": {
-        "tags": ["Listings"],
-        "summary": "Delete listing (owner/admin)",
-        "security": [{ "bearerAuth": [] }],
-        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
-        "responses": { "204": { "description": "Deleted" }, "403": { "description": "Forbidden" } }
+        "tags": [
+          "Listings"
+        ],
+        "summary": "Delete (owner/admin)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted"
+          },
+          "403": {
+            "description": "Forbidden"
+          }
+        }
       }
     },
     "/api/listings/{id}/photos": {
       "post": {
-        "tags": ["Listings"],
-        "summary": "Add photo to listing",
-        "security": [{ "bearerAuth": [] }],
-        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type":"string" } }],
-        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Photo" }, "example": { "provider":"cloudinary","url":"https://res.cloudinary.com/demo/image/upload/v1/hoodie.jpg","key":"demo/hoodie","isCover":true } } } },
-        "responses": { "201": { "description": "Added" } }
+        "tags": [
+          "Listings"
+        ],
+        "summary": "Add photo",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Photo"
+              },
+              "example": {
+                "provider": "cloudinary",
+                "url": "https://res.cloudinary.com/demo/image/upload/v1/hoodie.jpg",
+                "key": "demo/hoodie",
+                "isCover": true
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Added"
+          }
+        }
       }
     },
     "/api/listings/{id}/photos/{photoId}/cover": {
       "patch": {
-        "tags": ["Listings"],
-        "summary": "Set cover photo",
-        "security": [{ "bearerAuth": [] }],
-        "parameters": [
-          { "name": "id", "in": "path", "required": true, "schema": { "type":"string" } },
-          { "name": "photoId", "in": "path", "required": true, "schema": { "type":"string" }, "description": "_id | publicId | serial of photo" }
+        "tags": [
+          "Listings"
         ],
-        "responses": { "200": { "description": "OK" } }
+        "summary": "Set cover photo",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "photoId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
       }
     },
     "/api/listings/{id}/photos/{photoId}": {
       "delete": {
-        "tags": ["Listings"],
-        "summary": "Remove photo",
-        "security": [{ "bearerAuth": [] }],
-        "parameters": [
-          { "name": "id", "in": "path", "required": true, "schema": { "type":"string" } },
-          { "name": "photoId", "in": "path", "required": true, "schema": { "type":"string" } }
+        "tags": [
+          "Listings"
         ],
-        "responses": { "204": { "description": "Deleted" } }
+        "summary": "Remove photo",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "photoId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted"
+          }
+        }
       }
     },
-
     "/api/favorites": {
-      "get": { "tags": ["Favorites"], "summary": "My favorites", "security": [{ "bearerAuth": [] }], "responses": { "200": { "description": "OK" } } },
+      "get": {
+        "tags": [
+          "Favorites"
+        ],
+        "summary": "My favorites",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
       "post": {
-        "tags": ["Favorites"],
+        "tags": [
+          "Favorites"
+        ],
         "summary": "Add favorite",
-        "security": [{ "bearerAuth": [] }],
-        "requestBody": { "required": true, "content": { "application/json": { "schema": { "type":"object", "required":["listing"], "properties": { "listing": { "type":"string" } } }, "example": { "listing":"1" } } } },
-        "responses": { "201": { "description": "Created" } }
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "listing"
+                ],
+                "properties": {
+                  "listing": {
+                    "type": "string"
+                  }
+                }
+              },
+              "example": {
+                "listing": "1"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created"
+          }
+        }
       }
     },
     "/api/favorites/{id}": {
       "delete": {
-        "tags": ["Favorites"],
+        "tags": [
+          "Favorites"
+        ],
         "summary": "Remove favorite",
-        "security": [{ "bearerAuth": [] }],
-        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type":"string" }, "description": "_id | publicId | serial of favorite" }],
-        "responses": { "204": { "description": "Deleted" } }
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted"
+          }
+        }
       }
     },
-
     "/api/orders": {
-      "get": { "tags": ["Orders"], "summary": "List my orders", "security": [{ "bearerAuth": [] }], "responses": { "200": { "description": "OK" } } },
+      "get": {
+        "tags": [
+          "Orders"
+        ],
+        "summary": "List my orders",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
       "post": {
-        "tags": ["Orders"],
+        "tags": [
+          "Orders"
+        ],
         "summary": "Create order",
-        "security": [{ "bearerAuth": [] }],
-        "requestBody": { "required": true, "content": { "application/json": { "schema": { "type":"object", "required":["listing","price"], "properties": { "listing": { "type":"string" }, "price": { "type":"number" } } }, "example": { "listing":"1","price":49.9 } } } },
-        "responses": { "201": { "description": "Created" } }
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "listing",
+                  "price"
+                ],
+                "properties": {
+                  "listing": {
+                    "type": "string"
+                  },
+                  "price": {
+                    "type": "number"
+                  }
+                }
+              },
+              "example": {
+                "listing": "1",
+                "price": 49.9
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created"
+          }
+        }
       }
     },
     "/api/orders/{id}": {
       "get": {
-        "tags": ["Orders"],
+        "tags": [
+          "Orders"
+        ],
         "summary": "Get order",
-        "security": [{ "bearerAuth": [] }],
-        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type":"string" }, "description": "_id | publicId | serial" }],
-        "responses": { "200": { "description": "OK" }, "404": { "description": "Not found" } }
-      },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "404": {
+            "description": "Not found"
+          }
+        }
+      }
+    },
+    "/api/orders/{id}/accept": {
       "patch": {
-        "tags": ["Orders"],
-        "summary": "Update order status",
-        "security": [{ "bearerAuth": [] }],
-        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type":"string" } }],
-        "requestBody": { "required": false, "content": { "application/json": { "schema": { "type":"object", "properties": { "status": { "type":"string", "example":"SHIPPED" } } } } } },
-        "responses": { "200": { "description": "OK" } }
+        "tags": [
+          "Orders"
+        ],
+        "summary": "Seller accepts",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/orders/{id}/decline": {
+      "patch": {
+        "tags": [
+          "Orders"
+        ],
+        "summary": "Seller declines",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/orders/{id}/cancel": {
+      "patch": {
+        "tags": [
+          "Orders"
+        ],
+        "summary": "Buyer cancels",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/orders/{id}/complete": {
+      "patch": {
+        "tags": [
+          "Orders"
+        ],
+        "summary": "Mark completed (either)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
       }
     },
     "/api/orders/{id}/messages": {
       "get": {
-        "tags": ["Orders"],
+        "tags": [
+          "Orders"
+        ],
         "summary": "List messages",
-        "security": [{ "bearerAuth": [] }],
-        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type":"string" } }],
-        "responses": { "200": { "description": "OK" } }
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
       },
       "post": {
-        "tags": ["Orders"],
+        "tags": [
+          "Orders"
+        ],
         "summary": "Post message",
-        "security": [{ "bearerAuth": [] }],
-        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type":"string" } }],
-        "requestBody": { "required": true, "content": { "application/json": { "schema": { "type":"object", "required":["text"], "properties": { "text": { "type":"string" } } }, "example": { "text":"Can you ship tomorrow?" } } } },
-        "responses": { "201": { "description": "Created" } }
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "text"
+                ],
+                "properties": {
+                  "text": {
+                    "type": "string"
+                  }
+                }
+              },
+              "example": {
+                "text": "Can you ship tomorrow?"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created"
+          }
+        }
       }
     },
-
-    "/api/reviews": {
-      "get": {
-        "tags": ["Reviews"],
-        "summary": "List reviews for a listing",
-        "parameters": [{ "name": "listing", "in": "query", "required": true, "schema": { "type":"string" }, "example": "1" }],
-        "responses": { "200": { "description": "OK" } }
-      },
+    "/api/orders/{id}/payments/authorize": {
       "post": {
-        "tags": ["Reviews"],
-        "summary": "Create review (buyer)",
-        "security": [{ "bearerAuth": [] }],
-        "requestBody": { "required": true, "content": { "application/json": { "schema": { "type":"object", "required":["listing","rating"], "properties": { "listing": { "type":"string" }, "rating": { "type":"integer","minimum":1,"maximum":5 }, "comment": { "type":"string" } } }, "example": { "listing":"1","rating":5,"comment":"Great quality hoodie!" } } } },
-        "responses": { "201": { "description": "Created" } }
+        "tags": [
+          "Payments"
+        ],
+        "summary": "Authorize payment (buyer/admin)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Authorized"
+          },
+          "409": {
+            "description": "Already authorized/captured"
+          }
+        }
+      }
+    },
+    "/api/orders/{id}/payments/capture": {
+      "post": {
+        "tags": [
+          "Payments"
+        ],
+        "summary": "Capture payment (admin)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Captured"
+          },
+          "409": {
+            "description": "Not authorized / already captured"
+          }
+        }
+      }
+    },
+    "/api/orders/{id}/payments/refund": {
+      "post": {
+        "tags": [
+          "Payments"
+        ],
+        "summary": "Refund payment (admin)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "amount": {
+                    "type": "number"
+                  },
+                  "reason": {
+                    "type": "string"
+                  }
+                }
+              },
+              "example": {
+                "amount": 10,
+                "reason": "Customer request"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Refunded (partial/full)"
+          },
+          "409": {
+            "description": "Nothing left to refund"
+          }
+        }
+      }
+    },
+    "/api/reviews": {
+      "post": {
+        "tags": [
+          "Reviews"
+        ],
+        "summary": "Create review",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "listing",
+                  "rating"
+                ],
+                "properties": {
+                  "listing": {
+                    "type": "string"
+                  },
+                  "rating": {
+                    "type": "integer"
+                  },
+                  "comment": {
+                    "type": "string"
+                  }
+                }
+              },
+              "example": {
+                "listing": "1",
+                "rating": 5,
+                "comment": "Great hoodie!"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created"
+          }
+        }
       }
     },
     "/api/reviews/{id}": {
       "patch": {
-        "tags": ["Reviews"],
-        "summary": "Update my review (owner or admin)",
-        "security": [{ "bearerAuth": [] }],
+        "tags": [
+          "Reviews"
+        ],
+        "summary": "Update my review (owner/admin)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "parameters": [
-          { "name": "id", "in": "path", "required": true, "schema": { "type":"string" }, "description": "_id | publicId | serial" }
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
         ],
         "requestBody": {
           "required": true,
@@ -514,104 +1824,353 @@
               "schema": {
                 "type": "object",
                 "properties": {
-                  "rating": { "type":"integer", "minimum":1, "maximum":5 },
-                  "comment": { "type":"string" }
+                  "rating": {
+                    "type": "integer"
+                  },
+                  "comment": {
+                    "type": "string"
+                  }
                 }
               },
-              "example": { "rating": 4, "comment": "Τελικά λίγο στενό στο στήθος" }
+              "example": {
+                "rating": 4,
+                "comment": "Λίγο στενό, πήρα XL"
+              }
             }
           }
         },
-        "responses": { "200": { "description": "OK" }, "403": { "description": "Forbidden" }, "404": { "description": "Not found" } }
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "403": {
+            "description": "Forbidden"
+          }
+        }
       },
       "delete": {
-        "tags": ["Reviews"],
-        "summary": "Delete my review (owner or admin)",
-        "security": [{ "bearerAuth": [] }],
-        "parameters": [
-          { "name": "id", "in": "path", "required": true, "schema": { "type":"string" }, "description": "_id | publicId | serial" }
+        "tags": [
+          "Reviews"
         ],
-        "responses": { "204": { "description": "Deleted" }, "403": { "description": "Forbidden" }, "404": { "description": "Not found" } }
+        "summary": "Delete my review (owner/admin)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted"
+          },
+          "403": {
+            "description": "Forbidden"
+          }
+        }
       }
     },
     "/api/sellers/me": {
       "get": {
-        "tags": ["Sellers"],
-        "summary": "Get my seller data",
-        "security": [{ "bearerAuth": [] }],
-        "responses": { "200": { "description": "OK", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UserPublic" } } } } }
+        "tags": [
+          "Sellers"
+        ],
+        "summary": "My seller data",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
       }
     },
     "/api/sellers/me/profile": {
       "put": {
-        "tags": ["Sellers"],
-        "summary": "Update my seller profile (addresses etc.)",
-        "security": [{ "bearerAuth": [] }],
-        "requestBody": { "required": true, "content": { "application/json": {
-          "schema": { "$ref": "#/components/schemas/SellerProfileUpdate" },
-          "example": { "shopName":"Christos Apparel", "addresses":[{ "line1":"Kifisias 1","city":"Athens","postalCode":"11523","country":"GR" }] }
-        } } },
-        "responses": { "200": { "description": "OK" }, "422": { "description": "Validation error" } }
+        "tags": [
+          "Sellers"
+        ],
+        "summary": "Update seller profile",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SellerProfileUpdate"
+              },
+              "example": {
+                "shopName": "Christos Apparel",
+                "addresses": [
+                  {
+                    "line1": "Kifisias 1",
+                    "city": "Athens",
+                    "postalCode": "11523",
+                    "country": "GR"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
       }
     },
     "/api/sellers/me/billing": {
       "put": {
-        "tags": ["Sellers"],
-        "summary": "Add/Update billing (after ADMIN approval)",
-        "security": [{ "bearerAuth": [] }],
-        "requestBody": { "required": true, "content": { "application/json": {
-          "schema": { "$ref": "#/components/schemas/SellerBillingUpsert" },
-          "example": { "legalName":"Xristos Ltd","vatNumber":"EL123456789","iban":"GR1601101250000000012300695","billingAddress":{"line1":"Lagoumitzi 12","city":"Athens","postalCode":"11745","country":"GR"} }
-        } } },
-        "responses": { "200": { "description": "OK" }, "400": { "description": "Not approved yet" }, "422": { "description": "Validation error" } }
+        "tags": [
+          "Sellers"
+        ],
+        "summary": "Add/Update billing (after admin approval)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SellerBillingUpsert"
+              },
+              "example": {
+                "legalName": "Xristos Ltd",
+                "vatNumber": "EL123456789",
+                "iban": "GR1601101250000000012300695",
+                "billingAddress": {
+                  "line1": "Lagoumitzi 12",
+                  "city": "Athens",
+                  "postalCode": "11745",
+                  "country": "GR"
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Not approved yet"
+          }
+        }
       }
     },
     "/api/sellers/me/upgrade": {
       "post": {
-        "tags": ["Sellers"],
-        "summary": "Upgrade to SELLER (requires ADMIN approval + billing)",
-        "security": [{ "bearerAuth": [] }],
-        "responses": { "200": { "description": "OK" }, "400": { "description": "Missing approval/billing" } }
+        "tags": [
+          "Sellers"
+        ],
+        "summary": "Upgrade to SELLER (requires admin approval + billing)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Missing approval/billing"
+          }
+        }
       }
     },
     "/api/sellers/{id}/summary": {
       "get": {
-        "tags": ["Sellers"],
-        "summary": "Seller summary (ADMIN or same user)",
-        "security": [{ "bearerAuth": [] }],
-        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type":"string" }, "description": "_id | publicId | serial" }],
-        "responses": { "200": { "description": "OK" }, "403": { "description": "Forbidden" }, "404": { "description": "Not found" } }
+        "tags": [
+          "Sellers"
+        ],
+        "summary": "Seller summary (admin or same user)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "403": {
+            "description": "Forbidden"
+          }
+        }
       }
     },
-
     "/api/admin/sellers/{id}/approve": {
       "post": {
-        "tags": ["Admin Sellers"],
+        "tags": [
+          "Admin Sellers"
+        ],
         "summary": "Approve seller",
-        "security": [{ "bearerAuth": [] }],
-        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type":"string" }, "description": "User identifier: _id | publicId (uuid) | serial" }],
-        "requestBody": { "required": false, "content": { "application/json": { "schema": { "type":"object", "properties": { "note": { "type":"string" } } }, "example": { "note":"Looks good" } } } },
-        "responses": { "200": { "description": "Approved" }, "404": { "description": "Not found" } }
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "note": {
+                    "type": "string"
+                  }
+                }
+              },
+              "example": {
+                "note": "Looks good"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Approved"
+          }
+        }
       }
     },
     "/api/admin/sellers/{id}/reject": {
       "post": {
-        "tags": ["Admin Sellers"],
+        "tags": [
+          "Admin Sellers"
+        ],
         "summary": "Reject seller",
-        "security": [{ "bearerAuth": [] }],
-        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type":"string" } }],
-        "requestBody": { "required": true, "content": { "application/json": { "schema": { "type":"object", "required":["reason"], "properties": { "reason": { "type":"string" } } }, "example": { "reason":"ID photo is blurry" } } } },
-        "responses": { "200": { "description": "Rejected" }, "404": { "description": "Not found" } }
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "reason"
+                ],
+                "properties": {
+                  "reason": {
+                    "type": "string"
+                  }
+                }
+              },
+              "example": {
+                "reason": "ID photo blurry"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Rejected"
+          }
+        }
       }
     },
     "/api/admin/sellers/{id}/need-more-info": {
       "post": {
-        "tags": ["Admin Sellers"],
-        "summary": "Flag seller as NEEDS_MORE_INFO",
-        "security": [{ "bearerAuth": [] }],
-        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type":"string" } }],
-        "requestBody": { "required": true, "content": { "application/json": { "schema": { "type":"object", "required":["message"], "properties": { "message": { "type":"string" } } }, "example": { "message":"Please upload proof of address" } } } },
-        "responses": { "200": { "description": "Flagged" }, "404": { "description": "Not found" } }
+        "tags": [
+          "Admin Sellers"
+        ],
+        "summary": "Flag needs more info",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "message"
+                ],
+                "properties": {
+                  "message": {
+                    "type": "string"
+                  }
+                }
+              },
+              "example": {
+                "message": "Upload proof of address"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Flagged"
+          }
+        }
       }
     }
   }

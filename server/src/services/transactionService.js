@@ -1,5 +1,6 @@
 const Order = require('../models/order.Model');
 const Transaction = require('../models/transaction.Model');
+const Listing = require('../models/listing.Model');
 
 function boom(msg, status = 400) { const e = new Error(msg); e.status = status; throw e; }
 
@@ -21,21 +22,42 @@ async function setOrderPaymentStatus(orderId, status) {
     await Order.updateOne({ _id: orderId }, { $set: { paymentStatus: status } });
 }
 
-async function authorize(orderId, actorUserId, { provider = 'mock', meta = {} } = {}) {
-    const order = await getOrderLean(orderId);
-    if (order.paymentStatus && order.paymentStatus !== 'UNPAID') boom('Order already authorized or captured', 409);
+async function resolveAmountAndCurrency(order) {
+    // 1) προτίμησε snapshot από το Order
+    if (order.price && order.price > 0) return { amount: order.price, currency: order.currency || 'EUR' };
+    // 2) fallback: τράβα από Listing (σε περίπτωση παλιών εγγραφών)
+    const listing = await Listing.findById(order.listingId).select('price currency').lean();
+    const amount = listing?.price || 0;
+    const currency = listing?.currency || 'EUR';
+    return { amount, currency };
+}
 
-    const amount = order.price || order.total || 0;
+async function authorize(orderId, actorUserId, { provider = 'mock', meta = {} } = {}) {
+    const order = await Order.findById(orderId).lean();
+    if (!order) { const e = new Error('Order not found'); e.status = 404; throw e; }
+    console.log('[tx.authorize] order.buyerId =', order.buyerId, ' == user? ', String(order.buyerId) === String(actorUserId));
+    console.log('[tx.authorize] amount snapshot =', order.price);
+
+    // buyer-only
+    if (String(order.buyerId) !== String(actorUserId)) {
+        const e = new Error('Only buyer can authorize'); e.status = 403; throw e;
+    }
+
+    if (order.paymentStatus && order.paymentStatus !== 'UNPAID') {
+        const e = new Error('Order already authorized or captured'); e.status = 409; throw e;
+    }
+
+    const { amount, currency } = await resolveAmountAndCurrency(order);
     if (!amount) boom('Order amount is zero', 400);
 
     await Transaction.create({
         order: order._id,
-        buyer: order.buyer,
-        seller: order.seller,
+        buyerId: order.buyerId,
+        sellerId: order.sellerId,
         type: 'CHARGE_AUTH',
         status: 'SUCCESS',
         amount,
-        currency: order.currency || 'EUR',
+        currency,
         provider,
         providerRef: null,
         meta: { ...meta, by: String(actorUserId) }
@@ -56,11 +78,11 @@ async function capture(orderId, actorUserId, { provider = 'mock', meta = {} } = 
 
     await Transaction.create({
         order: order._id,
-        buyer: order.buyer,
-        seller: order.seller,
+        buyerId: order.buyerId,
+        sellerId: order.sellerId,
         type: 'CAPTURE',
         status: 'SUCCESS',
-        amount: remaining, // MVP: full remaining
+        amount: remaining,
         currency: order.currency || 'EUR',
         provider,
         providerRef: null,
@@ -84,8 +106,8 @@ async function refund(orderId, actorUserId, { amount, reason, provider = 'mock',
 
     await Transaction.create({
         order: order._id,
-        buyer: order.buyer,
-        seller: order.seller,
+        buyerId: order.buyerId,
+        sellerId: order.sellerId,
         type: 'REFUND',
         status: 'SUCCESS',
         amount: refundAmount,
@@ -95,7 +117,6 @@ async function refund(orderId, actorUserId, { amount, reason, provider = 'mock',
         meta: { ...meta, reason, by: String(actorUserId) }
     });
 
-    // Αν έγινε full refund → REFUNDED, αλλιώς μένει CAPTURED
     const left = refundable - refundAmount;
     await setOrderPaymentStatus(order._id, left > 0 ? 'CAPTURED' : 'REFUNDED');
 

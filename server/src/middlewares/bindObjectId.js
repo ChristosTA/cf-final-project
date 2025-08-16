@@ -1,4 +1,4 @@
-const { requireObjectId } = require('../utils/findByAnyId');
+const { requireObjectId } = require('../utils/resolveId');
 
 // Δέχεται serial | uuid | _id στο req[source][paramName] και το μετατρέπει σε Mongo ObjectId
 const bindObjectId = (paramName, Model, source = 'params', entity = 'Resource') => {

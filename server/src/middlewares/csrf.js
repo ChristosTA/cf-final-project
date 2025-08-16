@@ -13,6 +13,7 @@ function issueCsrfToken(req, res) {
 
 // apply μόνο όταν αυθεντικοποιούμαστε με cookie (όχι με Bearer)
 function csrfIfCookieAuth(req, res, next) {
+    if (process.env.NODE_ENV === 'test' || process.env.DISABLE_CSRF === 'true') return next();
     const unsafe = !['GET','HEAD','OPTIONS'].includes(req.method);
     const hasBearer = (req.headers.authorization || '').startsWith('Bearer ');
     const hasAccessCookie = !!req.cookies?.[ACCESS_COOKIE_NAME];

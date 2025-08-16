@@ -8,8 +8,17 @@ exports.list = asyncHandler(async (req, res) => {
 });
 
 exports.create = asyncHandler(async (req, res) => {
-    const item = await listings.create(req.user.id, req.body);
-    res.status(201).json(item);
+    // αν έχεις validateBody στη route, θα βρεις το καθαρό payload εδώ:
+    const payload = res.locals?.validated ?? req.body;
+
+    // δημιουργία listing για τον τρέχοντα seller
+    const doc = await listings.create(req.user.id, payload);
+
+    // σιγουρεύουμε ότι στο response υπάρχει "id"
+    const json = doc?.toJSON ? doc.toJSON() : doc;
+    if (!json.id) json.id = json.publicId || String(json._id);
+
+    res.status(201).json(json);
 });
 
 exports.get = asyncHandler(async (req, res) => {

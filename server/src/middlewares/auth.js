@@ -1,38 +1,47 @@
-const jwt = require('jsonwebtoken');
+// server/src/middlewares/auth.js
+const { verifyAccess } = require('../utils/jwt');
 const { ACCESS_COOKIE_NAME } = require('../utils/cookies');
-
-
-function requireAuth(req, res, next) {
-    const hdr = req.headers.authorization || '';
-    const token = hdr.startsWith('Bearer ') ? hdr.slice(7) : null;
-    if (!token) { res.status(401); return next(new Error('Missing token')); }
-    try {
-        const payload = jwt.verify(token, process.env.JWT_SECRET);
-        req.user = { id: payload.sub, roles: payload.roles || ['USER'] };
-        next();
-    } catch {
-        res.status(401);
-        next(new Error('Invalid or expired token'));
-    }
-}
-
-function requireRole(...allowed) {
-    return (req, res, next) => {
-        if (!req.user || !req.user.roles?.some(r => allowed.includes(r))) {
-            res.status(403);
-            return next(new Error('Forbidden - insufficient role'));
-        }
-        next();
-    };
-}
-
 
 function getTokenFromReq(req) {
     const h = req.headers.authorization || '';
-    if (h.startsWith('Bearer ')) return h.slice(7);
-    // fallback: cookie-mode
-    if (req.cookies && req.cookies[ACCESS_COOKIE_NAME]) return req.cookies[ACCESS_COOKIE_NAME];
+    if (h.startsWith('Bearer ')) return h.slice(7);              // μόνο JWT, χωρίς "Bearer "
+    if (req.cookies?.[ACCESS_COOKIE_NAME]) return req.cookies[ACCESS_COOKIE_NAME];
     return null;
+}
+
+function requireAuth(req, _res, next) {
+    const token = getTokenFromReq(req);
+    if (!token) {
+        const e = new Error('Missing token');
+        e.status = 401;
+        return next(e);
+    }
+    try {
+        const payload = verifyAccess(token); // ✅ ίδια βιβλιοθήκη με το sign
+        req.user = {
+            id: String(payload.sub),
+            roles: payload.roles || ['USER'],
+            serial: payload.serial,
+            publicId: payload.publicId
+        };
+        return next();
+    } catch (err) {
+        err.status = 401;
+        err.message = 'Invalid or expired token';
+        return next(err);
+    }
+}
+
+// απλό RBAC helper, αν το χρησιμοποιείς
+function requireRole(...allowed) {
+    return (req, _res, next) => {
+        if (!req.user?.roles?.some(r => allowed.includes(r))) {
+            const e = new Error('Forbidden - insufficient role');
+            e.status = 403;
+            return next(e);
+        }
+        next();
+    };
 }
 
 module.exports = { requireAuth, requireRole, getTokenFromReq };

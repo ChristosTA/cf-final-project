@@ -6,15 +6,16 @@ const { updateMeSchema } = require('../api/validators/userSchemas');
 const userCtrl = require('../controllers/userController');
 
 
+
 router.use('/auth', require('./auth'));
-router.use('/users', require('./users'));
-router.use('/categories', require('./categories'));
 router.use('/listings', require('./listings'));
 router.use('/orders', require('./orders'));
 router.use('/favorites', require('./favorites'));
-router.use('/reviews', require('./reviews'));
 router.use('/sellers', require('./sellers'));
-router.use('/admin', require('./admin.sellers'));
+router.use('/admin/sellers', require('./admin.sellers'));
+router.use('/categories', require('./categories'));
+router.use('/reviews', require('./reviews'));
+router.use('/users', require('./users'));
 
 
 

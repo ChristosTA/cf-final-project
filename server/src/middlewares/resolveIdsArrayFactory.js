@@ -1,5 +1,5 @@
 // src/middlewares/resolveIdsArrayFactory.js
-const { requireObjectId } = require('../utils/findByAnyId');
+const { requireObjectId } = require('../utils/resolveId');
 
 /**
  * Μετατρέπει ένα πεδίο array (ή single value) από serial/uuid/_id/slug => [Mongo ObjectId]
